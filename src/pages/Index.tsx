@@ -1,0 +1,111 @@
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { FileText, Zap, Shield, TrendingUp } from "lucide-react";
+
+const Index = () => {
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="h-6 w-6 text-primary" />
+            <span className="text-xl font-bold text-foreground">InvoiceFlow</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/auth">
+              <Button variant="ghost">Sign In</Button>
+            </Link>
+            <Link to="/auth">
+              <Button>Get Started</Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
+            Create Professional Invoices in Seconds
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8">
+            Generate beautiful, customizable invoices with our modern templates. 
+            Track payments, manage clients, and get paid faster.
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Link to="/auth">
+              <Button size="lg" className="text-lg px-8">
+                Start Free Trial
+              </Button>
+            </Link>
+            <Button size="lg" variant="outline" className="text-lg px-8">
+              View Templates
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="text-center p-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-4">
+              <Zap className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Lightning Fast</h3>
+            <p className="text-muted-foreground">
+              Create invoices in seconds with our intuitive form builder and pre-designed templates.
+            </p>
+          </div>
+
+          <div className="text-center p-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-4">
+              <Shield className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Secure & Private</h3>
+            <p className="text-muted-foreground">
+              Your data is encrypted and secure. We never share your information with third parties.
+            </p>
+          </div>
+
+          <div className="text-center p-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-4">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">Professional Results</h3>
+            <p className="text-muted-foreground">
+              Beautiful, professional invoices that make a great impression on your clients.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="bg-primary text-primary-foreground rounded-2xl p-12 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-lg mb-8 opacity-90">
+            Join thousands of professionals who trust InvoiceFlow for their billing needs.
+          </p>
+          <Link to="/auth">
+            <Button size="lg" variant="secondary" className="text-lg px-8">
+              Create Your First Invoice
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border mt-20">
+        <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
+          <p>&copy; 2024 InvoiceFlow. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default Index;
