@@ -13,7 +13,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold text-foreground">InvoiceFlow</span>
+            <span className="text-xl font-bold text-foreground">Sendmybill</span>
           </div>
           <div className="flex items-center gap-4">
             <h2 className="uppercase border px-3 py-2">Support here</h2>
@@ -88,7 +88,7 @@ const Index = () => {
             Ready to Get Started?
           </h2>
           <p className="text-lg mb-8 opacity-90">
-            Join thousands of professionals who trust InvoiceFlow for their billing needs.
+            Escape the traditional ways, choose Sendmybill to pass your bills quickly.
           </p>
           <Link to="/auth">
             <Button size="lg" variant="secondary" className="text-lg px-8">
