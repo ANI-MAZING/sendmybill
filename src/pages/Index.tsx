@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Zap, Shield, TrendingUp } from "lucide-react";
+import { FileText, Zap, Shield, TrendingUp, Github, X, Twitter } from "lucide-react";
 
 const Index = () => {
+
+  const year = new Date().getFullYear()
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -13,12 +16,9 @@ const Index = () => {
             <span className="text-xl font-bold text-foreground">InvoiceFlow</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/auth">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link to="/auth">
-              <Button>Get Started</Button>
-            </Link>
+            <h2 className="uppercase border px-3 py-2">Support here</h2>
+            <Link to="https://github.com/ANI-MAZING"><Github/></Link>
+            <Link to="https://x.com/Anirudhgharat"><Twitter/></Link>
           </div>
         </div>
       </header>
@@ -36,11 +36,11 @@ const Index = () => {
           <div className="flex items-center justify-center gap-4">
             <Link to="/auth">
               <Button size="lg" className="text-lg px-8">
-                Start Free Trial
+                Sign In
               </Button>
             </Link>
             <Button size="lg" variant="outline" className="text-lg px-8">
-              View Templates
+              Create new account
             </Button>
           </div>
         </div>
@@ -101,7 +101,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border mt-20">
         <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
-          <p>&copy; 2024 InvoiceFlow. All rights reserved.</p>
+          <p>&copy; {year} Sendmybill. All rights reserved. Developed by <Link className="text-white" to="https://www.aniruddha.space">Aniruddha</Link></p>
         </div>
       </footer>
     </div>
