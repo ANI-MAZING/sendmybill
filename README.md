@@ -2,7 +2,7 @@
 
 A modern, production-ready invoice management system built with a cutting-edge tech stack. Designed for small businesses, freelancers, and companies to create, manage, and track professional invoices with real-time synchronization and cloud storage.
 
-**Live Demo**: [Deployed on Vercel](https://invoice-swift-demo.vercel.app)  
+**Live Demo**: [Deployed on Vercel](https://sendmybill.vercel.app/)  
 **Repository**: [GitHub](https://github.com/ANI-MAZING/invoice-swift)
 
 ---
@@ -82,8 +82,6 @@ Dashboard (Invoice List & Overview)
 | **Lucide React**     | 0.462.0 | Icons               | 600+ icons, consistent design, tree-shakeable            |
 | **Sonner**           | 1.7.4   | Toast Notifications | Beautiful, customizable, type-safe notifications         |
 | **React Day Picker** | 8.10.1  | Date Selection      | Accessible, customizable date picker                     |
-| **Embla Carousel**   | 8.6.0   | Carousel Component  | Lightweight, accessible, fluid animations                |
-| **Recharts**         | 2.15.4  | Charts/Graphs       | React-native, responsive, easy data visualization        |
 
 ### Document Generation & Export
 
@@ -174,13 +172,12 @@ company-assets/ → User-specific folders for logos & signatures
 
 ```bash
 # Clone repository
-git clone https://github.com/ANI-MAZING/invoice-swift.git
+git clone https://github.com/ANI-MAZING/invoice-swift
 cd invoice-swift
 
 # Install dependencies
 npm install
-# or
-bun install
+
 
 # Create .env file with Supabase credentials
 VITE_SUPABASE_URL=your_url
@@ -350,20 +347,6 @@ npm run lint
 
 ---
 
-## 📦 Dependencies Breakdown
-
-- **Core**: React 18, React Router 6, TypeScript
-- **Styling**: Tailwind CSS, Shadcn/UI (48 components)
-- **Forms**: React Hook Form, Zod, @hookform/resolvers
-- **Data**: @tanstack/react-query, @supabase/supabase-js
-- **Export**: jsPDF, HTML2Canvas
-- **UI**: Radix UI (23 primitives), Lucide (icons), Sonner (toasts)
-- **Utilities**: date-fns, clsx, tailwind-merge, next-themes
-
-**Total Package Count**: 403 packages  
-**Bundle Size**: ~150KB (gzipped)
-
----
 
 ## 🎓 Learning Outcomes
 
