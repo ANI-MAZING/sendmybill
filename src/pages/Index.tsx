@@ -39,9 +39,11 @@ const Index = () => {
                 Sign In
               </Button>
             </Link>
+            <Link to="/auth">
             <Button size="lg" variant="outline" className="text-lg px-8">
               Create new account
             </Button>
+              </Link>
           </div>
         </div>
       </section>
