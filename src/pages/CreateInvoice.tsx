@@ -79,6 +79,7 @@ const CreateInvoice = () => {
         notes: formData.notes,
         template_id: formData.templateId,
         status: "draft",
+        currency: formData.currency,
       });
 
       if (error) throw error;

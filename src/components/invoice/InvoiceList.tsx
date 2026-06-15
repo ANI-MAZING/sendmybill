@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Trash2, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getCurrencySymbol } from "@/lib/currencies";
 
 interface Invoice {
   id: string;
@@ -18,6 +19,7 @@ interface Invoice {
   status: string;
   created_at: string;
   due_date: string;
+  currency?: string;
 }
 
 const InvoiceList = () => {
@@ -199,7 +201,7 @@ const InvoiceList = () => {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-foreground">
-                  ${invoice.total.toFixed(2)}
+                  {getCurrencySymbol(invoice.currency || "USD")}{invoice.total.toFixed(2)}
                 </p>
               </div>
             </div>

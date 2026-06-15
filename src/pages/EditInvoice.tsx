@@ -56,7 +56,7 @@ const EditInvoice = () => {
         taxRate: data.tax_rate,
         notes: data.notes || "",
         templateId: data.template_id,
-        currency: (data as any).currency || "USD",
+        currency: data.currency || "USD",
       });
     } catch (error: any) {
       toast.error("Error loading invoice");
@@ -94,6 +94,7 @@ const EditInvoice = () => {
           total,
           notes: formData.notes,
           template_id: formData.templateId,
+          currency: formData.currency,
         })
         .eq("id", id);
 
