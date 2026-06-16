@@ -53,6 +53,7 @@ export type Database = {
           client_email: string
           client_name: string
           created_at: string
+          currency: string
           due_date: string
           id: string
           invoice_number: string
@@ -73,6 +74,7 @@ export type Database = {
           client_email: string
           client_name: string
           created_at?: string
+          currency?: string
           due_date: string
           id?: string
           invoice_number: string
@@ -93,6 +95,7 @@ export type Database = {
           client_email?: string
           client_name?: string
           created_at?: string
+          currency?: string
           due_date?: string
           id?: string
           invoice_number?: string
