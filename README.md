@@ -2,7 +2,7 @@
 
 A modern, production-ready invoice management system built with a cutting-edge tech stack. Designed for small businesses, freelancers, and companies to create, manage, and track professional invoices with real-time synchronization and cloud storage.
 
-**Live Demo**: [Deployed on Vercel](https://sendmybill.aniruddhagharat.me/)  
+**Live Demo Link**: [Deployed on Vercel](https://sendmybill.aniruddhagharat.me/)  
 **Repository**: [GitHub](https://github.com/ANI-MAZING/invoice-swift)
 
 ---
