@@ -10,11 +10,14 @@ interface TemplateProps {
 
 const ModernTemplate = ({ formData, totals, profileData }: TemplateProps) => {
   const currency = formData.currency || "USD";
+  const documentLabel = formData.documentType === "proforma" ? "PROFORMA" : "INVOICE";
+  const accent = profileData?.invoice_accent_color ?? "#2563eb";
+  const fontClass = profileData?.invoice_font === "serif" ? "font-serif" : profileData?.invoice_font === "mono" ? "font-mono" : "font-sans";
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className={`space-y-6 sm:space-y-8 ${fontClass}`}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b-2 border-blue-600 pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b-2 pb-6" style={{ borderColor: accent }}>
         <div className="flex items-start gap-4">
           {profileData?.company_logo_url && (
             <img
@@ -24,7 +27,7 @@ const ModernTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             />
           )}
           <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-blue-600">INVOICE</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold" style={{ color: accent }}>{documentLabel}</h1>
             <p className="text-gray-600 mt-2">{formData.invoiceNumber}</p>
           </div>
         </div>
@@ -44,6 +47,7 @@ const ModernTemplate = ({ formData, totals, profileData }: TemplateProps) => {
           <p className="font-semibold">{format(formData.issueDate, "MMM dd, yyyy")}</p>
           <p className="text-sm text-gray-600 mt-2">Due Date</p>
           <p className="font-semibold">{format(formData.dueDate, "MMM dd, yyyy")}</p>
+          {formData.documentType === "proforma" && formData.expiryDate && <><p className="text-sm text-gray-600 mt-2">Valid Until</p><p className="font-semibold">{format(formData.expiryDate, "MMM dd, yyyy")}</p></>}
         </div>
       </div>
 
@@ -128,6 +132,20 @@ const ModernTemplate = ({ formData, totals, profileData }: TemplateProps) => {
         </div>
       )}
 
+      {formData.paymentTerms && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-600 mb-2">PAYMENT TERMS</h3>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{formData.paymentTerms}</p>
+        </div>
+      )}
+
+      {formData.lateFeeNotes && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-600 mb-2">LATE-FEE POLICY</h3>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{formData.lateFeeNotes}</p>
+        </div>
+      )}
+
       {/* Bank Details */}
       {profileData && (profileData.bank_name || profileData.bank_account_number) && (
         <div className="mt-6 sm:mt-8 pt-6 border-t border-gray-200">
@@ -139,6 +157,10 @@ const ModernTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             {profileData.bank_swift_code && <p><span className="font-medium">SWIFT/BIC:</span> {profileData.bank_swift_code}</p>}
           </div>
         </div>
+      )}
+
+      {formData.footerText && (
+        <p className="mt-8 border-t border-gray-200 pt-4 text-center text-xs text-gray-500 whitespace-pre-line">{formData.footerText}</p>
       )}
     </div>
   );

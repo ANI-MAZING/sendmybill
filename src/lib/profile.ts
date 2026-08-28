@@ -16,6 +16,8 @@ export const toSellerSnapshot = (profile: ProfileSource): SellerSnapshot => ({
   bank_swift_code: profile.bank_swift_code ?? "",
   company_logo_url: profile.company_logo_url ?? null,
   signature_url: profile.signature_url ?? null,
+  invoice_accent_color: profile.invoice_accent_color ?? "#2563eb",
+  invoice_font: profile.invoice_font === "serif" || profile.invoice_font === "mono" ? profile.invoice_font : "sans",
 });
 
 const resolveAssetUrl = async (value: string | null): Promise<string | null> => {

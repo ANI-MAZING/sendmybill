@@ -10,9 +10,12 @@ interface TemplateProps {
 
 const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
   const currency = formData.currency || "USD";
+  const documentLabel = formData.documentType === "proforma" ? "Proforma" : "Invoice";
+  const accent = profileData?.invoice_accent_color ?? "#111827";
+  const fontClass = profileData?.invoice_font === "serif" ? "font-serif" : profileData?.invoice_font === "mono" ? "font-mono" : "font-sans";
 
   return (
-    <div className="space-y-8 sm:space-y-12">
+    <div className={`space-y-8 sm:space-y-12 ${fontClass}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div className="flex items-start gap-4">
@@ -24,7 +27,7 @@ const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             />
           )}
           <div>
-            <h1 className="text-xl sm:text-2xl font-light tracking-wide">Invoice</h1>
+            <h1 className="text-xl sm:text-2xl font-light tracking-wide" style={{ color: accent }}>{documentLabel}</h1>
             <p className="text-gray-500 mt-1">{formData.invoiceNumber}</p>
             {profileData && (
               <div className="mt-4">
@@ -44,6 +47,7 @@ const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
           <p>{format(formData.issueDate, "MMM dd, yyyy")}</p>
           <p className="text-gray-500 mt-2">Due</p>
           <p>{format(formData.dueDate, "MMM dd, yyyy")}</p>
+          {formData.documentType === "proforma" && formData.expiryDate && <><p className="text-gray-500 mt-2">Valid Until</p><p>{format(formData.expiryDate, "MMM dd, yyyy")}</p></>}
         </div>
       </div>
 
@@ -121,6 +125,20 @@ const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
         </div>
       )}
 
+      {formData.paymentTerms && (
+        <div className="pt-8 border-t border-gray-200">
+          <p className="text-xs text-gray-400 mb-2">PAYMENT TERMS</p>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{formData.paymentTerms}</p>
+        </div>
+      )}
+
+      {formData.lateFeeNotes && (
+        <div className="pt-8 border-t border-gray-200">
+          <p className="text-xs text-gray-400 mb-2">LATE-FEE POLICY</p>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{formData.lateFeeNotes}</p>
+        </div>
+      )}
+
       {/* Bank Details */}
       {profileData && (profileData.bank_name || profileData.bank_account_number) && (
         <div className="pt-8 border-t border-gray-200">
@@ -132,6 +150,10 @@ const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             {profileData.bank_swift_code && <p><span className="font-medium">SWIFT:</span> {profileData.bank_swift_code}</p>}
           </div>
         </div>
+      )}
+
+      {formData.footerText && (
+        <p className="pt-8 border-t border-gray-200 text-center text-xs text-gray-400 whitespace-pre-line">{formData.footerText}</p>
       )}
     </div>
   );

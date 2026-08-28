@@ -68,6 +68,41 @@ UPDATE public.invoices SET status = lower(status);
 UPDATE public.invoices SET status = 'pending' WHERE status IN ('sent', 'overdue');
 UPDATE public.invoices SET status = 'draft' WHERE status NOT IN ('draft', 'pending', 'paid');
 
+-- Older app versions allowed template identifiers that are no longer
+-- rendered. Preserve those invoices while assigning the closest supported
+-- presentation before enforcing the current template vocabulary.
+UPDATE public.invoices
+SET template_id = 'modern'
+WHERE template_id IS NULL OR template_id NOT IN ('modern', 'classic', 'minimal');
+
+-- The earliest invoice editor stored a unit price under `price`. Translate
+-- that key to the current `rate` shape without changing descriptions,
+-- quantities, or the invoice-level financial snapshot.
+UPDATE public.invoices AS invoice
+SET items = (
+  SELECT jsonb_agg(
+    CASE
+      WHEN item ? 'price'
+        AND NOT item ? 'rate'
+        AND jsonb_typeof(item->'quantity') = 'number'
+        AND jsonb_typeof(item->'price') = 'number'
+      THEN (item - 'price') || jsonb_build_object(
+        'rate', item->'price',
+        'amount', to_jsonb(round((item->>'quantity')::NUMERIC * (item->>'price')::NUMERIC, 2))
+      )
+      ELSE item
+    END
+    ORDER BY ordinal
+  )
+  FROM jsonb_array_elements(invoice.items) WITH ORDINALITY AS legacy_item(item, ordinal)
+)
+WHERE jsonb_typeof(invoice.items) = 'array'
+  AND EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(invoice.items) AS legacy_item(item)
+    WHERE item ? 'price' AND NOT item ? 'rate'
+  );
+
 CREATE OR REPLACE FUNCTION public.invoice_items_are_valid(candidate JSONB)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -178,10 +213,14 @@ ALTER TABLE public.invoices
   ADD CONSTRAINT invoices_tax_amount_check CHECK (tax_amount >= 0),
   ADD CONSTRAINT invoices_total_check CHECK (total >= 0 AND total = subtotal + tax_amount),
   ADD CONSTRAINT invoices_due_date_check CHECK (due_date >= issue_date),
-  ADD CONSTRAINT invoices_items_check CHECK (public.invoice_items_are_valid(items)),
+  -- Enforce the current shape for new and changed records without deleting or
+  -- rewriting historical snapshots that contain legitimate negative discounts.
+  ADD CONSTRAINT invoices_items_check CHECK (public.invoice_items_are_valid(items)) NOT VALID,
   ADD CONSTRAINT invoices_currency_check CHECK (currency IN ('USD','EUR','GBP','JPY','CAD','AUD','CHF','CNY','INR','BRL','MXN','SGD','HKD','KRW','ZAR','AED','NZD','SEK','NOK','DKK')),
   ADD CONSTRAINT invoices_template_id_check CHECK (template_id IN ('modern', 'classic', 'minimal')),
-  ADD CONSTRAINT invoices_client_email_check CHECK (btrim(client_email) <> '' AND position('@' IN client_email) > 1),
+  -- New records require a valid email; one historical snapshot predates that
+  -- requirement and remains readable until it is explicitly edited.
+  ADD CONSTRAINT invoices_client_email_check CHECK (btrim(client_email) <> '' AND position('@' IN client_email) > 1) NOT VALID,
   ADD CONSTRAINT invoices_invoice_number_check CHECK (btrim(invoice_number) <> '');
 
 -- Preserve all legacy records while resolving duplicate invoice numbers before

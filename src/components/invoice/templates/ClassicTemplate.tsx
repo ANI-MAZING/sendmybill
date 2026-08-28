@@ -10,11 +10,14 @@ interface TemplateProps {
 
 const ClassicTemplate = ({ formData, totals, profileData }: TemplateProps) => {
   const currency = formData.currency || "USD";
+  const documentLabel = formData.documentType === "proforma" ? "PROFORMA" : "INVOICE";
+  const accent = profileData?.invoice_accent_color ?? "#1f2937";
+  const fontClass = profileData?.invoice_font === "mono" ? "font-mono" : profileData?.invoice_font === "sans" ? "font-sans" : "font-serif";
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${fontClass}`}>
       {/* Header */}
-      <div className="text-center border-b-2 border-gray-800 pb-4">
+      <div className="text-center border-b-2 pb-4" style={{ borderColor: accent }}>
         {profileData?.company_logo_url && (
           <div className="flex justify-center mb-4">
             <img
@@ -24,7 +27,7 @@ const ClassicTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             />
           </div>
         )}
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold">INVOICE</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: accent }}>{documentLabel}</h1>
         <p className="text-gray-600 mt-2">{formData.invoiceNumber}</p>
       </div>
 
@@ -44,12 +47,13 @@ const ClassicTemplate = ({ formData, totals, profileData }: TemplateProps) => {
       {/* Dates and Client Info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 mb-3">INVOICE DETAILS</h3>
+          <h3 className="text-xs font-semibold text-gray-500 mb-3">{documentLabel} DETAILS</h3>
           <div className="space-y-1">
             <div className="flex flex-col sm:flex-row">
               <span className="text-gray-600 sm:w-24">Issue Date:</span>
               <span className="font-medium">{format(formData.issueDate, "MMM dd, yyyy")}</span>
             </div>
+            {formData.documentType === "proforma" && formData.expiryDate && <div className="flex flex-col sm:flex-row"><span className="text-gray-600 sm:w-24">Valid Until:</span><span className="font-medium">{format(formData.expiryDate, "MMM dd, yyyy")}</span></div>}
             <div className="flex flex-col sm:flex-row">
               <span className="text-gray-600 sm:w-24">Due Date:</span>
               <span className="font-medium">{format(formData.dueDate, "MMM dd, yyyy")}</span>
@@ -137,6 +141,20 @@ const ClassicTemplate = ({ formData, totals, profileData }: TemplateProps) => {
         </div>
       )}
 
+      {formData.paymentTerms && (
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <h3 className="text-xs font-semibold text-gray-500 mb-2">PAYMENT TERMS</h3>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{formData.paymentTerms}</p>
+        </div>
+      )}
+
+      {formData.lateFeeNotes && (
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <h3 className="text-xs font-semibold text-gray-500 mb-2">LATE-FEE POLICY</h3>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{formData.lateFeeNotes}</p>
+        </div>
+      )}
+
       {/* Bank Details */}
       {profileData && (profileData.bank_name || profileData.bank_account_number) && (
         <div className="mt-6 pt-4 border-t border-gray-200">
@@ -148,6 +166,10 @@ const ClassicTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             {profileData.bank_swift_code && <p><span className="font-medium">SWIFT/BIC:</span> {profileData.bank_swift_code}</p>}
           </div>
         </div>
+      )}
+
+      {formData.footerText && (
+        <p className="mt-6 border-t border-gray-200 pt-4 text-center text-xs text-gray-500 whitespace-pre-line">{formData.footerText}</p>
       )}
     </div>
   );

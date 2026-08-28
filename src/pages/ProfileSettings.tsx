@@ -30,6 +30,11 @@ const profileSchema = z.object({
   bank_swift_code: z.string().optional(),
   default_currency: z.string().min(3),
   default_payment_terms: z.coerce.number().int().min(0).max(365),
+  default_tax_rate: z.coerce.number().min(0).max(100),
+  proforma_prefix: z.string().trim().min(1).max(20).regex(/^[A-Za-z0-9-]+$/),
+  proforma_next_number: z.coerce.number().int().positive(),
+  invoice_accent_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Choose a six-digit hex color"),
+  invoice_font: z.enum(["sans", "serif", "mono"]),
   invoice_prefix: z.string().trim().min(1).max(20).regex(/^[A-Za-z0-9-]+$/, "Use letters, numbers, and hyphens only"),
   invoice_next_number: z.coerce.number().int().positive(),
 });
@@ -70,6 +75,11 @@ export default function ProfileSettings() {
       bank_swift_code: "",
       default_currency: "USD",
       default_payment_terms: 30,
+      default_tax_rate: 0,
+      proforma_prefix: "PRO-",
+      proforma_next_number: 1,
+      invoice_accent_color: "#2563eb",
+      invoice_font: "sans",
       invoice_prefix: "INV-",
       invoice_next_number: 1,
     },
@@ -105,6 +115,11 @@ export default function ProfileSettings() {
           bank_swift_code: data.bank_swift_code || "",
           default_currency: data.default_currency || "USD",
           default_payment_terms: data.default_payment_terms ?? 30,
+          default_tax_rate: data.default_tax_rate ?? 0,
+          proforma_prefix: data.proforma_prefix ?? "PRO-",
+          proforma_next_number: data.proforma_next_number ?? 1,
+          invoice_accent_color: data.invoice_accent_color ?? "#2563eb",
+          invoice_font: data.invoice_font === "serif" || data.invoice_font === "mono" ? data.invoice_font : "sans",
           invoice_prefix: data.invoice_prefix || "INV-",
           invoice_next_number: data.invoice_next_number ?? 1,
         });
@@ -551,6 +566,13 @@ export default function ProfileSettings() {
                     )}
                   />
                 </div>
+                <FormField
+                  control={form.control}
+                  name="default_tax_rate"
+                  render={({ field }) => (
+                    <FormItem><FormLabel>Default Tax Rate (%)</FormLabel><FormControl><Input type="number" min="0" max="100" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}
+                />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -568,6 +590,15 @@ export default function ProfileSettings() {
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">Example: {form.watch("invoice_prefix") || "INV-"}{String(form.watch("invoice_next_number") || 1).padStart(4, "0")}</p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField control={form.control} name="proforma_prefix" render={({ field }) => <FormItem><FormLabel>Proforma Prefix</FormLabel><FormControl><Input placeholder="PRO-" {...field} /></FormControl><FormMessage /></FormItem>} />
+                  <FormField control={form.control} name="proforma_next_number" render={({ field }) => <FormItem><FormLabel>Next Proforma Number</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField control={form.control} name="invoice_accent_color" render={({ field }) => <FormItem><FormLabel>Invoice Accent Color</FormLabel><div className="flex gap-2"><Input type="color" className="w-16 p-1" value={field.value} onChange={field.onChange} /><FormControl><Input {...field} /></FormControl></div><FormMessage /></FormItem>} />
+                  <FormField control={form.control} name="invoice_font" render={({ field }) => <FormItem><FormLabel>Invoice Typography</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="sans">Sans serif</SelectItem><SelectItem value="serif">Serif</SelectItem><SelectItem value="mono">Monospace</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
+                </div>
+                <Button type="button" variant="outline" onClick={() => navigate("/dashboard/presets")}>Manage reusable service presets</Button>
               </CardContent>
             </Card>
 

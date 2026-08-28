@@ -25,12 +25,31 @@ interface Client {
   client_address: string | null;
 }
 
+interface Project {
+  id: string;
+  client_id: string;
+  name: string;
+  currency: string;
+}
+
+interface Preset {
+  id: string;
+  name: string;
+  items: unknown;
+  tax_rate: number;
+  notes: string | null;
+  payment_terms: string | null;
+}
+
 const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: InvoiceFormProps) => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [clientLoadError, setClientLoadError] = useState(false);
 
   useEffect(() => {
-    fetchClients();
+    void fetchClients();
+    void fetchProjectsAndPresets();
   }, []);
 
   const fetchClients = async () => {
@@ -48,16 +67,35 @@ const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: Invoice
     }
   };
 
+  const fetchProjectsAndPresets = async () => {
+    const [projectResult, presetResult] = await Promise.all([
+      supabase.from("projects").select("id, client_id, name, currency").order("name"),
+      supabase.from("invoice_presets").select("id, name, items, tax_rate, notes, payment_terms").order("name"),
+    ]);
+    if (!projectResult.error) setProjects(projectResult.data ?? []);
+    if (!presetResult.error) setPresets(presetResult.data ?? []);
+  };
+
   const handleClientSelect = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
       setFormData({
         ...formData,
+        clientId: client.id,
+        projectId: null,
         clientName: client.client_name,
         clientEmail: client.client_email,
         clientAddress: client.client_address || "",
       });
     }
+  };
+
+  const handlePresetSelect = (presetId: string) => {
+    const preset = presets.find(({ id }) => id === presetId);
+    if (!preset || !Array.isArray(preset.items)) return;
+    const items = preset.items.filter((item): item is InvoiceLineItem => Boolean(item) && typeof item === "object" && "description" in item && "quantity" in item && "rate" in item && "amount" in item);
+    if (!items.length) return;
+    setFormData({ ...formData, items, taxRate: preset.tax_rate, notes: preset.notes ?? "", paymentTerms: preset.payment_terms ?? "" });
   };
 
   const addItem = () => {
@@ -94,6 +132,7 @@ const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: Invoice
       {/* Template and Currency Row */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Template & Currency</h3>
+        {presets.length > 0 && <div className="space-y-2"><Label>Service preset</Label><Select onValueChange={handlePresetSelect}><SelectTrigger><SelectValue placeholder="Apply a reusable preset…" /></SelectTrigger><SelectContent>{presets.map((preset) => <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>)}</SelectContent></Select></div>}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Invoice Template</Label>
@@ -182,6 +221,7 @@ const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: Invoice
           />
           {fieldError("dueDate")}
         </div>
+        {formData.documentType === "proforma" && <div className="space-y-2"><Label htmlFor="expiryDate">Valid until</Label><Input id="expiryDate" type="date" min={toDateInputValue(formData.issueDate)} value={formData.expiryDate ? toDateInputValue(formData.expiryDate) : ""} onChange={(event) => setFormData({ ...formData, expiryDate: event.target.value ? fromDateInputValue(event.target.value) : null })} />{fieldError("expiryDate")}</div>}
       </div>
 
       <div className="space-y-4">
@@ -204,6 +244,7 @@ const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: Invoice
             </Select>
           </div>
         )}
+        {projects.filter((project) => !formData.clientId || project.client_id === formData.clientId).length > 0 && <div className="space-y-2"><Label>Project (optional)</Label><Select value={formData.projectId ?? "none"} onValueChange={(value) => { const project = projects.find(({ id }) => id === value); setFormData({ ...formData, projectId: value === "none" ? null : value, currency: project?.currency ?? formData.currency }); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No project</SelectItem>{projects.filter((project) => !formData.clientId || project.client_id === formData.clientId).map((project) => <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>)}</SelectContent></Select></div>}
         {clientLoadError && (
           <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
             <span>Saved clients couldn’t be loaded.</span>
@@ -355,6 +396,36 @@ const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: Invoice
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             placeholder="Any additional notes or terms..."
             rows={4}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="paymentTerms">Payment Terms</Label>
+          <Textarea
+            id="paymentTerms"
+            value={formData.paymentTerms}
+            onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
+            placeholder="For example: Payment is due within 30 days."
+            rows={3}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="lateFeeNotes">Late-fee Notes</Label>
+          <Textarea
+            id="lateFeeNotes"
+            value={formData.lateFeeNotes}
+            onChange={(e) => setFormData({ ...formData, lateFeeNotes: e.target.value })}
+            placeholder="Optional late-payment policy shown on the invoice."
+            rows={3}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="footerText">Footer Text</Label>
+          <Textarea
+            id="footerText"
+            value={formData.footerText}
+            onChange={(e) => setFormData({ ...formData, footerText: e.target.value })}
+            placeholder="A short thank-you or legal footer."
+            rows={3}
           />
         </div>
       </div>

@@ -16,15 +16,22 @@ import type { InvoiceFormData, SellerSnapshot } from "@/types/domain";
 import { z } from "zod";
 
 const emptyInvoice: InvoiceFormData = {
+  clientId: null,
+  projectId: null,
+  documentType: "invoice",
   invoiceNumber: "",
   clientName: "",
   clientEmail: "",
   clientAddress: "",
   issueDate: new Date(),
   dueDate: new Date(),
+  expiryDate: null,
   items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
   taxRate: 0,
   notes: "",
+  paymentTerms: "",
+  lateFeeNotes: "",
+  footerText: "",
   templateId: "modern",
   currency: "USD",
 };
@@ -58,12 +65,16 @@ const EditInvoice = () => {
       ? data.seller_snapshot as Partial<Record<keyof SellerSnapshot, string | null>>
       : {};
     setFormData({
+      clientId: data.client_id,
+      projectId: data.project_id,
+      documentType: data.document_type as InvoiceFormData["documentType"],
       invoiceNumber: data.invoice_number,
       clientName: data.client_name,
       clientEmail: data.client_email,
       clientAddress: data.client_address || "",
       issueDate: new Date(`${data.issue_date}T00:00:00`),
       dueDate: new Date(`${data.due_date}T00:00:00`),
+      expiryDate: data.expiry_date ? new Date(`${data.expiry_date}T00:00:00`) : null,
       items: itemResult.data.map((item) => ({
         description: item.description ?? "",
         quantity: item.quantity ?? 0,
@@ -72,6 +83,9 @@ const EditInvoice = () => {
       })),
       taxRate: data.tax_rate,
       notes: data.notes || "",
+      paymentTerms: data.payment_terms ?? "",
+      lateFeeNotes: data.late_fee_notes ?? "",
+      footerText: data.footer_text ?? "",
       templateId: data.template_id as InvoiceFormData["templateId"],
       currency: data.currency || "USD",
       sellerSnapshot: toSellerSnapshot(rawSnapshot),
@@ -104,14 +118,20 @@ const EditInvoice = () => {
       client_name: invoice.clientName,
       client_email: invoice.clientEmail,
       client_address: invoice.clientAddress || null,
+      client_id: invoice.clientId,
+      project_id: invoice.projectId,
       issue_date: toDateInputValue(invoice.issueDate),
       due_date: toDateInputValue(invoice.dueDate),
+      expiry_date: invoice.expiryDate ? toDateInputValue(invoice.expiryDate) : null,
       items: invoice.items as unknown as Json,
       subtotal: recalculatedTotals.subtotal,
       tax_rate: invoice.taxRate,
       tax_amount: recalculatedTotals.taxAmount,
       total: recalculatedTotals.total,
       notes: invoice.notes || null,
+      payment_terms: invoice.paymentTerms || null,
+      late_fee_notes: invoice.lateFeeNotes || null,
+      footer_text: invoice.footerText || null,
       template_id: invoice.templateId,
       currency: invoice.currency,
     }).eq("id", id ?? "");
@@ -127,7 +147,7 @@ const EditInvoice = () => {
       return;
     }
     toast.success("Invoice updated.");
-    navigate("/dashboard");
+    navigate(`/dashboard/invoices/${id}`);
   };
 
   if (loading) return <DashboardLayout><PageLoader label="Loading invoice…" /></DashboardLayout>;
@@ -137,7 +157,7 @@ const EditInvoice = () => {
       <div className="space-y-6">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div><h1 className="text-3xl font-bold">Edit Invoice</h1><p className="mt-1 text-muted-foreground">Update invoice details</p></div>
-          <div className="flex gap-2"><Button variant="outline" onClick={() => navigate("/dashboard")}>Cancel</Button><Button onClick={handleUpdate} disabled={saving}>{saving ? "Updating…" : "Update Invoice"}</Button></div>
+          <div className="flex gap-2"><Button variant="outline" onClick={() => navigate(`/dashboard/invoices/${id}`)}>Cancel</Button><Button onClick={handleUpdate} disabled={saving}>{saving ? "Updating…" : "Update Invoice"}</Button></div>
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="p-6"><InvoiceForm formData={formData} setFormData={setFormData} errors={errors} clearError={clearError} /></Card>

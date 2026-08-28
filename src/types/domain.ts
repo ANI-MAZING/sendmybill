@@ -21,18 +21,27 @@ export interface SellerSnapshot {
   bank_swift_code: string;
   company_logo_url: string | null;
   signature_url: string | null;
+  invoice_accent_color: string;
+  invoice_font: "sans" | "serif" | "mono";
 }
 
 export interface InvoiceFormData {
+  clientId: string | null;
+  projectId: string | null;
+  documentType: "invoice" | "proforma";
   invoiceNumber: string;
   clientName: string;
   clientEmail: string;
   clientAddress: string;
   issueDate: Date;
   dueDate: Date;
+  expiryDate: Date | null;
   items: InvoiceLineItem[];
   taxRate: number;
   notes: string;
+  paymentTerms: string;
+  lateFeeNotes: string;
+  footerText: string;
   templateId: "modern" | "classic" | "minimal";
   currency: string;
   sellerSnapshot?: SellerSnapshot;
@@ -50,6 +59,7 @@ export interface ProfileData extends SellerSnapshot {
   country_code?: string;
   default_currency?: string;
   default_payment_terms?: number;
+  default_tax_rate?: number;
   invoice_prefix?: string;
   invoice_next_number?: number;
   onboarding_completed?: boolean;

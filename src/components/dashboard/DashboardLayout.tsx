@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { FileText, LayoutDashboard, LogOut, Plus, Users, Settings } from "lucide-react";
+import { BriefcaseBusiness, FileText, LayoutDashboard, LogOut, Plus, Users, Settings, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -34,6 +34,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Button aria-label="Dashboard" variant={isActive("/dashboard") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard")}><LayoutDashboard className="h-4 w-4" /></Button>
           <Button aria-label="Create invoice" variant={isActive("/dashboard/create") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/create")}><Plus className="h-4 w-4" /></Button>
           <Button aria-label="Clients" variant={isActive("/dashboard/clients") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/clients")}><Users className="h-4 w-4" /></Button>
+          <Button aria-label="Projects" variant={location.pathname.startsWith("/dashboard/projects") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/projects")}><BriefcaseBusiness className="h-4 w-4" /></Button>
+          <Button aria-label="Income and outgoings" variant={isActive("/dashboard/ledger") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/ledger")}><WalletCards className="h-4 w-4" /></Button>
           <Button aria-label="Settings" variant={isActive("/dashboard/settings") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/settings")}><Settings className="h-4 w-4" /></Button>
           <ThemeToggle />
         </div>
@@ -71,6 +73,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           >
             <Users className="h-5 w-5 mr-3" />
             Clients
+          </Button>
+          <Button variant={location.pathname.startsWith("/dashboard/projects") ? "default" : "ghost"} className="w-full justify-start" onClick={() => navigate("/dashboard/projects")}>
+            <BriefcaseBusiness className="h-5 w-5 mr-3" />Projects
+          </Button>
+          <Button variant={isActive("/dashboard/ledger") ? "default" : "ghost"} className="w-full justify-start" onClick={() => navigate("/dashboard/ledger")}>
+            <WalletCards className="h-5 w-5 mr-3" />Income & Outgoings
           </Button>
           <Button
             variant={isActive("/dashboard/settings") ? "default" : "ghost"}
