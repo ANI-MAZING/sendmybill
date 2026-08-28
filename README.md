@@ -9,7 +9,7 @@ A modern, production-ready invoice management system built with a cutting-edge t
 
 ## 🎯 Project Overview
 
-Invoice Swift is a full-stack SaaS application that enables users to:
+Sendmybill is a full-stack SaaS application that enables users to:
 
 - Create and manage invoices with multiple customizable templates
 - Maintain a client database for quick invoice generation
@@ -51,10 +51,10 @@ Dashboard (Invoice List & Overview)
 | ------------------- | ------- | ----------------------- | --------------------------------------------------------------------------------- |
 | **React**           | 18.3.1  | UI Component Library    | Industry standard, excellent ecosystem, component reusability                     |
 | **TypeScript**      | 5.8.3   | Static Type Checking    | Catches errors at compile-time, improves code maintainability, better IDE support |
-| **Vite**            | 5.4.19  | Build Tool & Dev Server | 10-100x faster than Webpack, instant HMR, production-optimized builds             |
+| **Vite**            | 8.2.2   | Build Tool & Dev Server | Fast HMR and production-optimized builds                                           |
 | **Tailwind CSS**    | 3.4.17  | Styling Framework       | Utility-first, highly customizable, rapid UI development, smaller bundle size     |
 | **shadcn/ui**       | Latest  | Component Library       | Accessible, unstyled, copy-paste components, built on Radix UI + Tailwind         |
-| **React Router**    | 6.30.1  | Client-side Routing     | SPA navigation, nested routes, code splitting support                             |
+| **React Router**    | 7.18.3  | Client-side Routing     | SPA navigation, protected routes, and code splitting                              |
 | **React Hook Form** | 7.61.1  | Form State Management   | Lightweight, performant, minimal re-renders, easy validation                      |
 | **Zod**             | 3.25.76 | Schema Validation       | TypeScript-first validation, runtime & compile-time checking                      |
 
@@ -71,7 +71,6 @@ Dashboard (Invoice List & Overview)
 
 | Technology                | Version | Purpose         | Why Chosen                                                               |
 | ------------------------- | ------- | --------------- | ------------------------------------------------------------------------ |
-| **React Query**           | 5.83.0  | Server State    | Automatic caching, background refetching, simplifies async data handling |
 | **@supabase/supabase-js** | 2.81.1  | Database Client | Realtime subscriptions, type-safe queries, automatic session handling    |
 
 ### UI/UX Libraries
@@ -87,7 +86,7 @@ Dashboard (Invoice List & Overview)
 
 | Technology      | Version | Purpose        | Why Chosen                                                   |
 | --------------- | ------- | -------------- | ------------------------------------------------------------ |
-| **jsPDF**       | 3.0.3   | PDF Generation | Client-side PDF creation, no backend needed, privacy-focused |
+| **jsPDF**       | 4.2.1   | PDF Generation | Client-side PDF creation, no backend needed, privacy-focused |
 | **HTML2Canvas** | 1.4.1   | DOM to Canvas  | Converts invoice HTML to image for PDF embedding             |
 
 ### Utilities & Helpers
@@ -107,6 +106,7 @@ Dashboard (Invoice List & Overview)
 | **TypeScript ESLint** | 8.38.0  | TypeScript-specific linting rules |
 | **PostCSS**           | 8.5.6   | CSS Processing & Autoprefixing    |
 | **Autoprefixer**      | 10.4.21 | Vendor prefix handling            |
+| **Vitest**           | 4.1.11  | Unit testing                       |
 
 ---
 
@@ -164,7 +164,7 @@ company-assets/ → User-specific folders for logos & signatures
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ or 22.12+
 - npm or bun
 - Git
 
@@ -275,7 +275,7 @@ src/
 
 1. **Component-Driven Architecture**: Modular, reusable components from shadcn/ui
 2. **Form-First Validation**: React Hook Form + Zod for type-safe, server-side validation
-3. **Real-time State Sync**: React Query for automatic cache invalidation
+3. **Focused State Sync**: Typed Supabase queries with explicit loading, error, retry, and optimistic states
 4. **Provider Pattern**: Theme, Query, and Toast providers wrapped at App root
 5. **Custom Hooks**: Separation of logic from UI components
 6. **Environment Configuration**: Secure env variable handling for API keys
@@ -289,7 +289,7 @@ src/
 - **Image Optimization**: SVG icons instead of raster images
 - **CSS Optimization**: Tailwind purges unused styles in production
 - **Lazy Loading**: Components load on demand
-- **Caching Strategy**: React Query caches data client-side
+- **Data Strategy**: Route-level queries keep persistence behavior explicit and easy to audit
 
 ---
 

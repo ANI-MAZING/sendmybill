@@ -1,40 +1,56 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import CreateInvoice from "./pages/CreateInvoice";
-import EditInvoice from "./pages/EditInvoice";
-import ClientsManagement from "./pages/ClientsManagement";
-import ProfileSettings from "./pages/ProfileSettings";
-import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { PageLoader } from "@/components/shared/AsyncState";
 
-const queryClient = new QueryClient();
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const CreateInvoice = lazy(() => import("./pages/CreateInvoice"));
+const EditInvoice = lazy(() => import("./pages/EditInvoice"));
+const ClientsManagement = lazy(() => import("./pages/ClientsManagement"));
+const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+const Unauthorized = lazy(() => import("./pages/Unauthorized"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const protect = (element: ReactNode, requireOnboarding = true) => (
+  <ProtectedRoute requireOnboarding={requireOnboarding}>{element}</ProtectedRoute>
+);
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-    <QueryClientProvider client={queryClient}>
+    <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/create" element={<CreateInvoice />} />
-            <Route path="/dashboard/edit/:id" element={<EditInvoice />} />
-            <Route path="/dashboard/clients" element={<ClientsManagement />} />
-            <Route path="/dashboard/settings" element={<ProfileSettings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageLoader label="Loading Sendmybill…" />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/auth/update-password" element={<UpdatePassword />} />
+              <Route path="/onboarding" element={protect(<Onboarding />, false)} />
+              <Route path="/dashboard" element={protect(<Dashboard />)} />
+              <Route path="/dashboard/create" element={protect(<CreateInvoice />)} />
+              <Route path="/dashboard/edit/:id" element={protect(<EditInvoice />)} />
+              <Route path="/dashboard/clients" element={protect(<ClientsManagement />)} />
+              <Route path="/dashboard/settings" element={protect(<ProfileSettings />)} />
+              <Route path="/unauthorized" element={protect(<Unauthorized />, false)} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
+    </AuthProvider>
   </ThemeProvider>
 );
 

@@ -2,36 +2,17 @@ import { useRef, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { InvoiceFormData } from "@/pages/CreateInvoice";
 import ModernTemplate from "./templates/ModernTemplate";
 import ClassicTemplate from "./templates/ClassicTemplate";
 import MinimalTemplate from "./templates/MinimalTemplate";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-interface ProfileData {
-  company_name: string;
-  company_address: string;
-  company_phone: string;
-  company_email: string;
-  tax_id: string;
-  bank_name: string;
-  bank_account_number: string;
-  bank_routing_number: string;
-  bank_swift_code: string;
-  company_logo_url: string | null;
-  signature_url: string | null;
-}
+import { resolveSellerAssetUrls, toSellerSnapshot } from "@/lib/profile";
+import type { InvoiceFormData, InvoiceTotals, ProfileData } from "@/types/domain";
 
 interface InvoicePreviewProps {
   formData: InvoiceFormData;
-  totals: {
-    subtotal: number;
-    taxAmount: number;
-    total: number;
-  };
+  totals: InvoiceTotals;
 }
 
 const InvoicePreview = ({ formData, totals }: InvoicePreviewProps) => {
@@ -39,11 +20,14 @@ const InvoicePreview = ({ formData, totals }: InvoicePreviewProps) => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
+    let mounted = true;
+    const fetchProfile = async () => {
+      try {
+        if (formData.sellerSnapshot) {
+          const resolvedSnapshot = await resolveSellerAssetUrls(formData.sellerSnapshot);
+          if (mounted) setProfileData(resolvedSnapshot);
+          return;
+        }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -54,18 +38,24 @@ const InvoicePreview = ({ formData, totals }: InvoicePreviewProps) => {
         .single();
 
       if (error) throw error;
-      if (data) setProfileData(data as ProfileData);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    }
-  };
+        if (data && mounted) setProfileData(await resolveSellerAssetUrls(toSellerSnapshot(data)));
+      } catch {
+        if (mounted) setProfileData(null);
+      }
+    };
+    void fetchProfile();
+    return () => { mounted = false; };
+  }, [formData.sellerSnapshot]);
 
   const handleExportPDF = async () => {
     if (!invoiceRef.current) return;
 
     try {
       toast.info("Generating PDF...");
-      
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2,
         useCORS: true,

@@ -1,28 +1,10 @@
 import { format } from "date-fns";
-import { InvoiceFormData } from "@/pages/CreateInvoice";
 import { formatCurrency } from "@/lib/currencies";
-
-interface ProfileData {
-  company_name: string;
-  company_address: string;
-  company_phone: string;
-  company_email: string;
-  tax_id: string;
-  bank_name: string;
-  bank_account_number: string;
-  bank_routing_number: string;
-  bank_swift_code: string;
-  company_logo_url: string | null;
-  signature_url: string | null;
-}
+import type { InvoiceFormData, InvoiceTotals, ProfileData } from "@/types/domain";
 
 interface TemplateProps {
   formData: InvoiceFormData;
-  totals: {
-    subtotal: number;
-    taxAmount: number;
-    total: number;
-  };
+  totals: InvoiceTotals;
   profileData: ProfileData | null;
 }
 

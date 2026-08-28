@@ -49,99 +49,99 @@ Priority: Required before public launch
 
 ### Product and UX
 
-- Rename all remaining `InvoiceFlow` references to `Sendmybill`.
-- Improve the landing page with a clear audience, product promise, screenshots, and a focused call to action.
-- Add a first-run onboarding flow:
-  - Name
-  - Business or personal billing mode
-  - Country and default currency
-  - Company details
-  - Default payment terms
-  - First client or sample invoice
-- Add an invoice numbering preference, such as `INV-0001` with configurable prefix and starting number.
-- Add a proper empty dashboard with a guided first invoice action.
+- ~~Rename all remaining `InvoiceFlow` references to `Sendmybill`.~~
+- ~~Improve the landing page with a clear audience, product promise, screenshots, and a focused call to action.~~
+- ~~Add a first-run onboarding flow:~~
+  - ~~Name~~
+  - ~~Business or personal billing mode~~
+  - ~~Country and default currency~~
+  - ~~Company details~~
+  - ~~Default payment terms~~
+  - ~~First client or sample invoice~~
+- ~~Add an invoice numbering preference, such as `INV-0001` with configurable prefix and starting number.~~
+- ~~Add a proper empty dashboard with a guided first invoice action.~~
 - Add consistent loading, error, success, and retry states.
-- Add a confirmation dialog before deleting invoices and clients instead of relying on browser `confirm()`.
-- Add a friendly not-found and unauthorized experience for direct URL access.
+- ~~Add a confirmation dialog before deleting invoices and clients instead of relying on browser `confirm()`.~~
+- ~~Add a friendly not-found and unauthorized experience for direct URL access.~~
 
 ### Authentication and authorization
 
-- Create a shared `ProtectedRoute` component for all dashboard routes.
-- Protect:
-  - `/dashboard`
-  - `/dashboard/create`
-  - `/dashboard/edit/:id`
-  - `/dashboard/clients`
-  - `/dashboard/settings`
-- Add password reset and email verification flows.
-- Handle expired sessions consistently.
-- Show useful authentication errors without exposing internal Supabase errors.
-- Keep Supabase RLS as the final authorization boundary; client-side route protection is only a UX layer.
+- ~~Create a shared `ProtectedRoute` component for all dashboard routes.~~
+- ~~Protect:~~
+  - ~~/dashboard~~
+  - ~~/dashboard/create~~
+  - ~~/dashboard/edit/:id~~
+  - ~~/dashboard/clients~~
+  - ~~/dashboard/settings~~
+- ~~Add password reset and email verification flows.~~
+- ~~Handle expired sessions consistently.~~
+- ~~Show useful authentication errors without exposing internal Supabase errors.~~
+- ~~Keep Supabase RLS as the final authorization boundary; client-side route protection is only a UX layer.~~
 
 ### Invoice correctness
 
-- Add a Zod schema for invoice creation and editing.
-- Validate at minimum:
-  - Invoice number
-  - Client name
-  - Client email
-  - Issue date
-  - Due date
-  - At least one non-empty line item
-  - Positive quantity
-  - Non-negative rate
-  - Tax range
-  - Supported currency
-- Display field-level validation errors instead of only showing a generic toast.
-- Recalculate totals from line items rather than trusting a submitted total.
-- Add server-side or database validation for financial values.
-- Add a database constraint for allowed statuses.
-- Add a unique invoice-number rule per user.
-- Prevent due dates earlier than issue dates unless explicitly allowed.
-- Decide whether clients may have an empty email. The current database requires `client_email`, while the invoice form does not require it.
+- ~~Add a Zod schema for invoice creation and editing.~~
+- ~~Validate at minimum:~~
+  - ~~Invoice number~~
+  - ~~Client name~~
+  - ~~Client email~~
+  - ~~Issue date~~
+  - ~~Due date~~
+  - ~~At least one non-empty line item~~
+  - ~~Positive quantity~~
+  - ~~Non-negative rate~~
+  - ~~Tax range~~
+  - ~~Supported currency~~
+- ~~Display field-level validation errors instead of only showing a generic toast.~~
+- ~~Recalculate totals from line items rather than trusting a submitted total.~~
+- ~~Add server-side or database validation for financial values.~~
+- ~~Add a database constraint for allowed statuses.~~
+- ~~Add a unique invoice-number rule per user.~~
+- ~~Prevent due dates earlier than issue dates unless explicitly allowed.~~
+- ~~Decide whether clients may have an empty email. The current database requires `client_email`, while the invoice form does not require it.~~ (Decision: client email is required in both the UI and database.)
 
 ### Database and migration cleanup
 
-- Add a checked-in migration for the `currency` column if it was added manually. The current initial invoice migration does not define it, while the application expects it.
+- ~~Add a checked-in migration for the `currency` column if it was added manually. The current initial invoice migration does not define it, while the application expects it.~~
 - Regenerate Supabase types after every schema change.
-- Add indexes for:
-  - `invoices.user_id`
-  - `invoices.user_id, created_at`
-  - `invoices.user_id, status`
-  - `invoices.user_id, due_date`
-  - `clients.user_id, client_name`
-- Add `CHECK` constraints for status, tax rate, quantity, and monetary values.
-- Add an invoice snapshot of seller information so editing a profile later does not change already-issued invoices.
-- Prefer integer minor units for money calculations where practical, or centralize decimal-safe money handling.
-- Add `updated_at` triggers consistently to every mutable table.
+- ~~Add indexes for:~~
+  - ~~invoices.user_id~~
+  - ~~invoices.user_id, created_at~~
+  - ~~invoices.user_id, status~~
+  - ~~invoices.user_id, due_date~~
+  - ~~clients.user_id, client_name~~
+- ~~Add `CHECK` constraints for status, tax rate, quantity, and monetary values.~~
+- ~~Add an invoice snapshot of seller information so editing a profile later does not change already-issued invoices.~~
+- ~~Prefer integer minor units for money calculations where practical, or centralize decimal-safe money handling.~~
+- ~~Add `updated_at` triggers consistently to every mutable table.~~
 - Document and test the complete schema from a fresh Supabase project.
 
 ### Storage and security
 
-- Validate uploaded file type and size for logos and signatures.
-- Use private storage with signed URLs where public access is not required.
-- Delete replaced and removed assets to prevent orphaned files.
-- Avoid storing sensitive bank information unless it is necessary for the product.
+- ~~Validate uploaded file type and size for logos and signatures.~~
+- ~~Use private storage with signed URLs where public access is not required.~~
+- ~~Delete replaced and removed assets to prevent orphaned files.~~
+- ~~Avoid storing sensitive bank information unless it is necessary for the product.~~ (Decision: bank fields remain optional and are only intended for payment instructions displayed on invoices.)
 - Add basic abuse protection to authentication and future public invoice endpoints.
-- Never place email provider or payment provider secrets in the frontend.
+- ~~Never place email provider or payment provider secrets in the frontend.~~
 
 ### Code quality and delivery
 
-- Make `npm run lint` pass with zero errors.
-- Remove unnecessary `any` usage and define shared domain types.
-- Fix React hook dependency warnings.
-- Add a test setup and at least unit tests for:
-  - Invoice totals
-  - Tax calculations
-  - Currency formatting
-  - Invoice validation
-  - Status transitions
+- ~~Make `npm run lint` pass with zero errors.~~
+- ~~Remove unnecessary `any` usage and define shared domain types.~~
+- ~~Fix React hook dependency warnings.~~
+- ~~Add a test setup and at least unit tests for:~~
+  - ~~Invoice totals~~
+  - ~~Tax calculations~~
+  - ~~Currency formatting~~
+  - ~~Invoice validation~~
+  - ~~Status transitions~~
 - Add component or end-to-end tests for creating, editing, and deleting an invoice.
-- Add CI to run type checking, linting, tests, and production build on every pull request.
-- Add an explicit `typecheck` script.
-- Update stale Browserslist data during dependency maintenance.
-- Add route-level lazy loading to reduce the current large initial JavaScript bundle.
-- Remove or implement unused React Query claims. Either use React Query properly or remove the dependency and documentation references.
+- ~~Add CI to run type checking, linting, tests, and production build on every pull request.~~
+- ~~Add an explicit `typecheck` script.~~
+- ~~Update stale Browserslist data during dependency maintenance.~~
+- ~~Add route-level lazy loading to reduce the current large initial JavaScript bundle.~~
+- ~~Remove or implement unused React Query claims. Either use React Query properly or remove the dependency and documentation references.~~
 
 ### Definition of done
 
@@ -590,4 +590,3 @@ Track these from the first release:
 - Free-to-paid conversion.
 
 The most important early signal is whether users return to create invoices repeatedly. The most important later signal is whether Sendmybill helps them receive payment faster.
-

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ErrorState, PageLoader } from "@/components/shared/AsyncState";
+
+const clientSchema = z.object({
+  client_name: z.string().trim().min(1, "Client name is required").max(200),
+  client_email: z.string().trim().min(1, "Client email is required").email("Enter a valid email"),
+  client_address: z.string().trim().max(2_000),
+  phone: z.string().trim().max(50),
+});
 
 interface Client {
   id: string;
@@ -21,8 +31,12 @@ interface Client {
 const ClientsManagement = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
   const [formData, setFormData] = useState({
     client_name: "",
     client_email: "",
@@ -30,29 +44,35 @@ const ClientsManagement = () => {
     phone: "",
   });
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const { data, error } = await supabase
+  const fetchClients = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    const { data, error } = await supabase
         .from("clients")
         .select("*")
         .order("client_name");
-
-      if (error) throw error;
+    if (error) setLoadError("Your clients couldn’t be loaded. Check your connection and try again.");
+    else {
       setClients(data || []);
-    } catch (error: any) {
-      toast.error("Error fetching clients");
-    } finally {
-      setLoading(false);
     }
-  };
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { void fetchClients(); }, [fetchClients]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
+    const validation = clientSchema.safeParse(formData);
+    if (!validation.success) {
+      const nextErrors: Partial<Record<keyof typeof formData, string>> = {};
+      validation.error.issues.forEach((issue) => {
+        const field = issue.path[0] as keyof typeof formData;
+        if (!nextErrors[field]) nextErrors[field] = issue.message;
+      });
+      setFieldErrors(nextErrors);
+      return;
+    }
+    setFieldErrors({});
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("You must be logged in");
@@ -62,41 +82,45 @@ const ClientsManagement = () => {
       if (editingClient) {
         const { error } = await supabase
           .from("clients")
-          .update(formData)
+          .update(validation.data)
           .eq("id", editingClient.id);
         if (error) throw error;
         toast.success("Client updated successfully");
       } else {
         const { error } = await supabase
           .from("clients")
-          .insert({ ...formData, user_id: user.id });
+          .insert({
+            user_id: user.id,
+            client_name: validation.data.client_name ?? "",
+            client_email: validation.data.client_email ?? "",
+            client_address: validation.data.client_address ?? "",
+            phone: validation.data.phone ?? "",
+          });
         if (error) throw error;
         toast.success("Client added successfully");
       }
 
       setOpen(false);
       resetForm();
-      fetchClients();
-    } catch (error: any) {
-      toast.error("Error saving client");
-    }
+      void fetchClients();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this client?")) return;
-    
-    try {
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
       const { error } = await supabase
         .from("clients")
         .delete()
-        .eq("id", id);
+        .eq("id", deleteTarget.id);
 
-      if (error) throw error;
-      toast.success("Client deleted successfully");
-      fetchClients();
-    } catch (error: any) {
-      toast.error("Error deleting client");
+    setDeleting(false);
+    if (error) {
+      toast.error("Client couldn’t be deleted. Please retry.");
+      return;
     }
+      setClients((current) => current.filter(({ id }) => id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast.success("Client deleted successfully");
   };
 
   const handleEdit = (client: Client) => {
@@ -118,17 +142,14 @@ const ClientsManagement = () => {
       phone: "",
     });
     setEditingClient(null);
+    setFieldErrors({});
   };
 
   if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading clients...</p>
-        </div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout><PageLoader label="Loading clients…" /></DashboardLayout>;
   }
+
+  if (loadError) return <DashboardLayout><ErrorState message={loadError} onRetry={() => void fetchClients()} /></DashboardLayout>;
 
   return (
     <DashboardLayout>
@@ -160,7 +181,9 @@ const ClientsManagement = () => {
                     value={formData.client_name}
                     onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                     required
+                    aria-invalid={Boolean(fieldErrors.client_name)}
                   />
+                  {fieldErrors.client_name && <p className="text-sm text-destructive">{fieldErrors.client_name}</p>}
                 </div>
                 <div>
                   <Label htmlFor="client_email">Email</Label>
@@ -170,7 +193,9 @@ const ClientsManagement = () => {
                     value={formData.client_email}
                     onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
                     required
+                    aria-invalid={Boolean(fieldErrors.client_email)}
                   />
+                  {fieldErrors.client_email && <p className="text-sm text-destructive">{fieldErrors.client_email}</p>}
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone</Label>
@@ -228,7 +253,8 @@ const ClientsManagement = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDelete(client.id)}
+                        onClick={() => setDeleteTarget(client)}
+                        aria-label={`Delete ${client.client_name}`}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -251,6 +277,12 @@ const ClientsManagement = () => {
             ))}
           </div>
         )}
+        <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(isOpen) => !isOpen && !deleting && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Delete {deleteTarget?.client_name}?</AlertDialogTitle><AlertDialogDescription>This removes the saved client. Existing invoices keep their client snapshot.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel disabled={deleting}>Keep client</AlertDialogCancel><AlertDialogAction disabled={deleting} onClick={(event) => { event.preventDefault(); void handleDelete(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deleting ? "Deleting…" : "Delete client"}</AlertDialogAction></AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

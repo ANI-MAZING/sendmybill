@@ -1,113 +1,81 @@
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { FileText, Zap, Shield, TrendingUp, Github, X, Twitter } from "lucide-react";
+import { ArrowRight, CheckCircle2, Download, FileText, Github, Palette, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const Index = () => {
+const Index = () => (
+  <div className="min-h-screen bg-background">
+    <header className="border-b">
+      <div className="container mx-auto flex items-center justify-between px-4 py-4">
+        <Link to="/" className="flex items-center gap-2"><FileText className="h-6 w-6" /><span className="text-xl font-bold">Sendmybill</span></Link>
+        <nav className="flex items-center gap-2 sm:gap-4" aria-label="Main navigation">
+          <a className="hidden text-sm text-muted-foreground hover:text-foreground sm:inline" href="#how-it-works">How it works</a>
+          <Button asChild variant="ghost"><Link to="/auth">Sign in</Link></Button>
+          <Button asChild><Link to="/auth">Create an invoice</Link></Button>
+        </nav>
+      </div>
+    </header>
 
-  const year = new Date().getFullYear()
-
-  return (
-    <div className="min-h-screen  bg-background">
-      {/* Header */}
-      <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            <span className="md:text-xl font-bold text-foreground">Sendmybill</span>
+    <main>
+      <section className="container mx-auto grid items-center gap-12 px-5 py-20 lg:grid-cols-[1fr_.9fr] lg:py-28">
+        <div>
+          <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground">For freelancers, consultants, and small teams</p>
+          <h1 className="max-w-3xl text-4xl font-bold leading-tight sm:text-6xl">Professional invoices, ready before your coffee gets cold.</h1>
+          <p className="mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">Create, organize, and export client invoices from one focused workspace. No accounting maze—just a dependable billing workflow.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg"><Link to="/auth">Create your first invoice <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+            <Button asChild size="lg" variant="outline"><a href="#product-preview">See the product</a></Button>
           </div>
-          <div className="flex items-center gap-4">
-            <h2 className="text-sm uppercase border p-2 md:px-3 md:py-2">Support here</h2>
-            <Link to="https://github.com/ANI-MAZING"><Github/></Link>
-            <Link to="https://x.com/Anirudhgharat"><Twitter/></Link>
+          <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            {['Free to get started', 'Three invoice templates', 'PDF export included'].map((benefit) => <span key={benefit} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />{benefit}</span>)}
           </div>
         </div>
-      </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-5  py-20 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl md:text-6xl font-bold text-foreground mb-6">
-            Create Professional Invoices in Seconds
-          </h1>
-          <p className=" md:text-xl text-lg text-muted-foreground mb-8">
-            Generate beautiful, customizable invoices with our modern templates. 
-            Track payments, manage clients, and get paid faster.
-          </p>
-          <div className="flex md:flex-row w-fit mx-auto flex-col items-center justify-center gap-4">
-            <Link to="/auth">
-              <Button size="lg" className="text-lg px-8">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/auth">
-            <Button size="lg" variant="outline" className="text-lg px-8">
-              Create new account
-            </Button>
-              </Link>
+        <div id="product-preview" className="border bg-card p-3 shadow-lg">
+          <img src="/og-preview-image.png" alt="Sendmybill invoice workspace product preview" className="aspect-[16/10] w-full object-cover object-top" />
+          <div className="grid grid-cols-3 border-t">
+            <PreviewStat label="Templates" value="3" />
+            <PreviewStat label="Currencies" value="20" />
+            <PreviewStat label="Export" value="PDF" />
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-4">
-              <Zap className="h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Lightning Fast</h3>
-            <p className="text-muted-foreground">
-              Create invoices in seconds with our intuitive form builder and pre-designed templates.
-            </p>
-          </div>
-
-          <div className="text-center p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-4">
-              <Shield className="h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Secure & Private</h3>
-            <p className="text-muted-foreground">
-              Your data is encrypted and secure. We never share your information with third parties.
-            </p>
-          </div>
-
-          <div className="text-center p-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-4">
-              <TrendingUp className="h-6  w-6" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Professional Results</h3>
-            <p className="text-muted-foreground">
-              Beautiful, professional invoices that make a great impression on your clients.
-            </p>
-          </div>
+      <section className="border-y bg-muted/40">
+        <div className="container mx-auto grid gap-8 px-5 py-16 md:grid-cols-3">
+          <Feature icon={<FileText />} title="Create quickly">Reuse saved clients, add line items, calculate tax, and preview the finished invoice as you type.</Feature>
+          <Feature icon={<Palette />} title="Look professional">Choose a template and add your company logo, signature, contact details, and payment information.</Feature>
+          <Feature icon={<Download />} title="Keep control">Save drafts, update their status, return later, and export a clean PDF whenever you need it.</Feature>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-6 py-20">
-        <div className="bg-primary text-primary-foreground  rounded-2xl p-12 text-center">
-          <h2 className="text-2xl md:text-4xl font-bold mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className=" md:text-lg mb-8 opacity-90">
-            Escape the traditional ways, choose Sendmybill to pass your bills quickly.
-          </p>
-          <Link to="/auth">
-            <Button size="lg" variant="secondary" className="text-lg ">
-              Create Your First Invoice
-            </Button>
-          </Link>
+      <section id="how-it-works" className="container mx-auto px-5 py-20">
+        <div className="mx-auto max-w-3xl text-center"><p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">A focused workflow</p><h2 className="mt-3 text-3xl font-bold sm:text-4xl">From blank page to billable in three steps</h2></div>
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          <Step number="01" title="Set your defaults">Add your identity, billing mode, currency, payment terms, and invoice numbering once.</Step>
+          <Step number="02" title="Build the invoice">Select a saved client, describe the work, and let Sendmybill calculate the totals.</Step>
+          <Step number="03" title="Save and export">Keep the invoice in your workspace, update its status, and download a professional PDF.</Step>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border mt-20">
-        <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
-          <p>&copy; {year} Sendmybill. All rights reserved. Developed by <Link className="text-white" to="https://www.aniruddha.space">Aniruddha</Link></p>
+      <section className="container mx-auto px-5 pb-20">
+        <div className="border bg-primary p-10 text-primary-foreground sm:p-14">
+          <div className="grid items-center gap-8 md:grid-cols-[1fr_auto]"><div><h2 className="text-3xl font-bold">Your next invoice can be ready in minutes.</h2><p className="mt-3 max-w-2xl opacity-80">Set up a reusable billing workspace and spend less time formatting documents.</p></div><Button asChild size="lg" variant="secondary"><Link to="/auth">Start now <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
         </div>
-      </footer>
-    </div>
-  );
-};
+      </section>
+    </main>
+
+    <footer className="border-t">
+      <div className="container mx-auto flex flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
+        <p>© {new Date().getFullYear()} Sendmybill.</p>
+        <div className="flex items-center gap-4"><span className="flex items-center gap-2"><Users className="h-4 w-4" />Built for independent businesses</span><a aria-label="Sendmybill on GitHub" href="https://github.com/ANI-MAZING/invoice-swift" target="_blank" rel="noreferrer"><Github className="h-5 w-5" /></a></div>
+      </div>
+    </footer>
+  </div>
+);
+
+const PreviewStat = ({ label, value }: { label: string; value: string }) => <div className="p-3 text-center"><p className="text-lg font-bold">{value}</p><p className="text-xs text-muted-foreground">{label}</p></div>;
+const Feature = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => <article><div className="mb-4 flex h-11 w-11 items-center justify-center border bg-background [&>svg]:h-5 [&>svg]:w-5">{icon}</div><h2 className="text-xl font-semibold">{title}</h2><p className="mt-2 leading-relaxed text-muted-foreground">{children}</p></article>;
+const Step = ({ number, title, children }: { number: string; title: string; children: ReactNode }) => <article className="border p-6"><span className="font-mono text-sm text-muted-foreground">{number}</span><h3 className="mt-6 text-xl font-semibold">{title}</h3><p className="mt-2 text-muted-foreground">{children}</p></article>;
 
 export default Index;
+import type { ReactNode } from "react";

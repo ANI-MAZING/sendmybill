@@ -60,6 +60,7 @@ export type Database = {
           issue_date: string
           items: Json
           notes: string | null
+          seller_snapshot: Json
           status: string
           subtotal: number
           tax_amount: number
@@ -81,6 +82,7 @@ export type Database = {
           issue_date: string
           items?: Json
           notes?: string | null
+          seller_snapshot?: Json
           status?: string
           subtotal?: number
           tax_amount?: number
@@ -102,6 +104,7 @@ export type Database = {
           issue_date?: string
           items?: Json
           notes?: string | null
+          seller_snapshot?: Json
           status?: string
           subtotal?: number
           tax_amount?: number
@@ -119,15 +122,22 @@ export type Database = {
           bank_name: string | null
           bank_routing_number: string | null
           bank_swift_code: string | null
+          billing_mode: string | null
           company_address: string | null
           company_email: string | null
           company_logo_url: string | null
           company_name: string | null
           company_phone: string | null
+          country_code: string | null
           created_at: string
+          default_currency: string
+          default_payment_terms: number
           email: string
           full_name: string | null
           id: string
+          invoice_next_number: number
+          invoice_prefix: string
+          onboarding_completed: boolean
           signature_url: string | null
           tax_id: string | null
           updated_at: string
@@ -137,15 +147,22 @@ export type Database = {
           bank_name?: string | null
           bank_routing_number?: string | null
           bank_swift_code?: string | null
+          billing_mode?: string | null
           company_address?: string | null
           company_email?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           company_phone?: string | null
+          country_code?: string | null
           created_at?: string
+          default_currency?: string
+          default_payment_terms?: number
           email: string
           full_name?: string | null
           id: string
+          invoice_next_number?: number
+          invoice_prefix?: string
+          onboarding_completed?: boolean
           signature_url?: string | null
           tax_id?: string | null
           updated_at?: string
@@ -155,15 +172,22 @@ export type Database = {
           bank_name?: string | null
           bank_routing_number?: string | null
           bank_swift_code?: string | null
+          billing_mode?: string | null
           company_address?: string | null
           company_email?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           company_phone?: string | null
+          country_code?: string | null
           created_at?: string
+          default_currency?: string
+          default_payment_terms?: number
           email?: string
           full_name?: string | null
           id?: string
+          invoice_next_number?: number
+          invoice_prefix?: string
+          onboarding_completed?: boolean
           signature_url?: string | null
           tax_id?: string | null
           updated_at?: string
