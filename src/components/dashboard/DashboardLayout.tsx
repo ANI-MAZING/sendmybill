@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { BriefcaseBusiness, FileText, LayoutDashboard, LogOut, Plus, Users, Settings, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, FileText, LayoutDashboard, LogOut, Plus, ReceiptText, Users, Settings, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -29,10 +29,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-card p-3 md:hidden">
-        <button className="flex items-center gap-2 font-bold" onClick={() => navigate("/dashboard")}><FileText className="h-5 w-5" />Sendmybill</button>
+        <button aria-label="Sendmybill dashboard" className="flex items-center gap-2 font-bold" onClick={() => navigate("/dashboard")}><FileText className="h-5 w-5" /><span className="hidden sm:inline">Sendmybill</span></button>
         <div className="flex items-center gap-1">
           <Button aria-label="Dashboard" variant={isActive("/dashboard") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard")}><LayoutDashboard className="h-4 w-4" /></Button>
           <Button aria-label="Create invoice" variant={isActive("/dashboard/create") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/create")}><Plus className="h-4 w-4" /></Button>
+          <Button aria-label="Manage invoices" variant={location.pathname.startsWith("/dashboard/invoices") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/invoices")}><ReceiptText className="h-4 w-4" /></Button>
           <Button aria-label="Clients" variant={isActive("/dashboard/clients") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/clients")}><Users className="h-4 w-4" /></Button>
           <Button aria-label="Projects" variant={location.pathname.startsWith("/dashboard/projects") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/projects")}><BriefcaseBusiness className="h-4 w-4" /></Button>
           <Button aria-label="Income and outgoings" variant={isActive("/dashboard/ledger") ? "default" : "ghost"} size="icon" onClick={() => navigate("/dashboard/ledger")}><WalletCards className="h-4 w-4" /></Button>
@@ -65,6 +66,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           >
             <Plus className="h-5 w-5 mr-3" />
             Create Invoice
+          </Button>
+          <Button
+            variant={location.pathname.startsWith("/dashboard/invoices") ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => navigate("/dashboard/invoices")}
+          >
+            <ReceiptText className="h-5 w-5 mr-3" />
+            Manage Invoices
           </Button>
           <Button
             variant={isActive("/dashboard/clients") ? "default" : "ghost"}

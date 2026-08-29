@@ -14,6 +14,7 @@ const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ManageInvoices = lazy(() => import("./pages/ManageInvoices"));
 const CreateInvoice = lazy(() => import("./pages/CreateInvoice"));
 const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
 const EditInvoice = lazy(() => import("./pages/EditInvoice"));
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/auth/update-password" element={<UpdatePassword />} />
               <Route path="/onboarding" element={protect(<Onboarding />, false)} />
               <Route path="/dashboard" element={protect(<Dashboard />)} />
+              <Route path="/dashboard/invoices" element={protect(<ManageInvoices />)} />
               <Route path="/dashboard/create" element={protect(<CreateInvoice />)} />
               <Route path="/dashboard/invoices/:id" element={protect(<InvoiceDetail />)} />
               <Route path="/dashboard/edit/:id" element={protect(<EditInvoice />)} />

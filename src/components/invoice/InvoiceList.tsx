@@ -35,7 +35,7 @@ import {
 
 type Invoice = Pick<
   Tables<"invoices">,
-  "id" | "invoice_number" | "client_name" | "total" | "status" | "created_at" | "due_date" | "currency" | "archived_at" | "document_type" | "proforma_status" | "expiry_date"
+  "id" | "invoice_number" | "client_name" | "total" | "status" | "created_at" | "issue_date" | "due_date" | "currency" | "archived_at" | "document_type" | "proforma_status" | "expiry_date"
 >;
 
 type StatusFilter = string;
@@ -67,8 +67,8 @@ const InvoiceList = () => {
     setError(null);
     const currentResult = await supabase
       .from("invoices")
-      .select("id, invoice_number, client_name, total, status, created_at, due_date, currency, archived_at, document_type, proforma_status, expiry_date")
-      .order("created_at", { ascending: false });
+      .select("id, invoice_number, client_name, total, status, created_at, issue_date, due_date, currency, archived_at, document_type, proforma_status, expiry_date")
+      .order("issue_date", { ascending: false });
 
     if (!currentResult.error) {
       setInvoices(currentResult.data ?? []);
@@ -85,16 +85,16 @@ const InvoiceList = () => {
 
     const legacyResult = await supabase
       .from("invoices")
-      .select("id, invoice_number, client_name, total, status, created_at, due_date, currency")
-      .order("created_at", { ascending: false });
+      .select("id, invoice_number, client_name, total, status, created_at, issue_date, due_date, currency")
+      .order("issue_date", { ascending: false });
     let legacyData = legacyResult.data;
     let legacyError = legacyResult.error;
 
     if (legacyError && isDatabaseSchemaCompatibilityError(legacyError)) {
       const originalResult = await supabase
         .from("invoices")
-        .select("id, invoice_number, client_name, total, status, created_at, due_date")
-        .order("created_at", { ascending: false });
+        .select("id, invoice_number, client_name, total, status, created_at, issue_date, due_date")
+        .order("issue_date", { ascending: false });
       legacyError = originalResult.error;
       legacyData = originalResult.error
         ? null
@@ -398,7 +398,7 @@ const InvoiceList = () => {
             <CardContent>
               <div className="flex items-center justify-between text-sm">
                 <div className="space-y-1 text-muted-foreground">
-                  <p>Created: {format(new Date(invoice.created_at), "MMM dd, yyyy")}</p>
+                  <p>Invoice date: {format(new Date(`${invoice.issue_date}T00:00:00`), "MMM dd, yyyy")}</p>
                   <p>{invoice.document_type === "proforma" && invoice.expiry_date ? "Valid until" : "Due"}: {format(new Date(`${invoice.document_type === "proforma" && invoice.expiry_date ? invoice.expiry_date : invoice.due_date}T00:00:00`), "MMM dd, yyyy")}</p>
                 </div>
                 <p className="text-2xl font-bold">{formatCurrency(invoice.total, invoice.currency)}</p>
