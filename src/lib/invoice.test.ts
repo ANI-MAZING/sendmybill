@@ -22,8 +22,8 @@ const validInvoice = (): InvoiceFormData => ({
   items: [{ description: "Design work", quantity: 2, rate: 250, amount: 1 }],
   taxRate: 18,
   notes: "Thank you",
-    discountType: "fixed",
-    discountValue: 0,
+  discountType: "fixed",
+  discountValue: 0,
   paymentTerms: "Due within 30 days",
   lateFeeNotes: "Late balances may incur a fee",
   footerText: "Thank you for your business",
@@ -43,7 +43,10 @@ describe("invoice validation", () => {
     invoice.currency = "XYZ";
     const result = invoiceSchema.safeParse(invoice);
     expect(result.success).toBe(false);
-    if (!result.success) expect(result.error.issues.map(({ path }) => path.join("."))).toEqual(expect.arrayContaining(["items.0.description", "taxRate", "currency"]));
+    if (!result.success)
+      expect(result.error.issues.map(({ path }) => path.join("."))).toEqual(
+        expect.arrayContaining(["items.0.description", "taxRate", "currency"]),
+      );
   });
 
   it("rejects a due date earlier than the issue date", () => {
@@ -76,34 +79,80 @@ describe("invoice display status", () => {
   const today = new Date(2026, 7, 29, 15, 30);
 
   it("marks an unpaid invoice overdue after its due date", () => {
-    expect(getInvoiceDisplayStatus({ archived_at: null, due_date: "2026-08-28", status: "pending" }, today)).toBe("overdue");
+    expect(
+      getInvoiceDisplayStatus(
+        { archived_at: null, due_date: "2026-08-28", status: "pending" },
+        today,
+      ),
+    ).toBe("overdue");
   });
 
   it("does not mark an invoice overdue on its due date", () => {
-    expect(getInvoiceDisplayStatus({ archived_at: null, due_date: "2026-08-29", status: "pending" }, today)).toBe("pending");
+    expect(
+      getInvoiceDisplayStatus(
+        { archived_at: null, due_date: "2026-08-29", status: "pending" },
+        today,
+      ),
+    ).toBe("pending");
   });
 
   it("keeps an unsent draft in draft even after its due date", () => {
-    expect(getInvoiceDisplayStatus({ archived_at: null, due_date: "2026-08-01", status: "draft" }, today)).toBe("draft");
+    expect(
+      getInvoiceDisplayStatus(
+        { archived_at: null, due_date: "2026-08-01", status: "draft" },
+        today,
+      ),
+    ).toBe("draft");
   });
 
   it("keeps paid invoices paid even when their due date has passed", () => {
-    expect(getInvoiceDisplayStatus({ archived_at: null, due_date: "2026-08-01", status: "paid" }, today)).toBe("paid");
+    expect(
+      getInvoiceDisplayStatus(
+        { archived_at: null, due_date: "2026-08-01", status: "paid" },
+        today,
+      ),
+    ).toBe("paid");
   });
 
   it("gives archived invoices precedence over payment status", () => {
-    expect(getInvoiceDisplayStatus({ archived_at: "2026-08-29T10:00:00Z", due_date: "2026-08-01", status: "paid" }, today)).toBe("archived");
+    expect(
+      getInvoiceDisplayStatus(
+        {
+          archived_at: "2026-08-29T10:00:00Z",
+          due_date: "2026-08-01",
+          status: "paid",
+        },
+        today,
+      ),
+    ).toBe("archived");
   });
 });
 
 describe("database schema compatibility", () => {
   it("recognizes missing-column responses that can use a legacy invoice query", () => {
-    expect(isDatabaseSchemaCompatibilityError({ code: "42703", message: "column invoices.archived_at does not exist" })).toBe(true);
-    expect(isDatabaseSchemaCompatibilityError({ code: "PGRST204", message: "Could not find a column in the schema cache" })).toBe(true);
+    expect(
+      isDatabaseSchemaCompatibilityError({
+        code: "42703",
+        message: "column invoices.archived_at does not exist",
+      }),
+    ).toBe(true);
+    expect(
+      isDatabaseSchemaCompatibilityError({
+        code: "PGRST204",
+        message: "Could not find a column in the schema cache",
+      }),
+    ).toBe(true);
   });
 
   it("does not hide authentication or connection failures behind the fallback", () => {
-    expect(isDatabaseSchemaCompatibilityError({ code: "42501", message: "permission denied" })).toBe(false);
-    expect(isDatabaseSchemaCompatibilityError({ message: "Failed to fetch" })).toBe(false);
+    expect(
+      isDatabaseSchemaCompatibilityError({
+        code: "42501",
+        message: "permission denied",
+      }),
+    ).toBe(false);
+    expect(
+      isDatabaseSchemaCompatibilityError({ message: "Failed to fetch" }),
+    ).toBe(false);
   });
 });
