@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Upload, X, Image, PenTool } from "lucide-react";
+import { currencies } from "@/lib/currencies";
+import { getCompanyAssetExtension, getCompanyAssetPath, validateCompanyAsset } from "@/lib/storage";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const profileSchema = z.object({
   full_name: z.string().optional(),
@@ -25,9 +28,24 @@ const profileSchema = z.object({
   bank_account_number: z.string().optional(),
   bank_routing_number: z.string().optional(),
   bank_swift_code: z.string().optional(),
+  default_currency: z.string().min(3),
+  default_payment_terms: z.coerce.number().int().min(0).max(365),
+  default_tax_rate: z.coerce.number().min(0).max(100),
+  proforma_prefix: z.string().trim().min(1).max(20).regex(/^[A-Za-z0-9-]+$/),
+  proforma_next_number: z.coerce.number().int().positive(),
+  invoice_accent_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Choose a six-digit hex color"),
+  invoice_font: z.enum(["sans", "serif", "mono"]),
+  invoice_prefix: z.string().trim().min(1).max(20).regex(/^[A-Za-z0-9-]+$/, "Use letters, numbers, and hyphens only"),
+  invoice_next_number: z.coerce.number().int().positive(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
+
+const signedUrlFor = async (pathOrUrl: string | null) => {
+  if (!pathOrUrl || pathOrUrl.startsWith("http")) return pathOrUrl;
+  const { data, error } = await supabase.storage.from("company-assets").createSignedUrl(pathOrUrl, 60 * 60);
+  return error ? null : data.signedUrl;
+};
 
 export default function ProfileSettings() {
   const navigate = useNavigate();
@@ -35,6 +53,8 @@ export default function ProfileSettings() {
   const [saving, setSaving] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [signaturePath, setSignaturePath] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -53,14 +73,19 @@ export default function ProfileSettings() {
       bank_account_number: "",
       bank_routing_number: "",
       bank_swift_code: "",
+      default_currency: "USD",
+      default_payment_terms: 30,
+      default_tax_rate: 0,
+      proforma_prefix: "PRO-",
+      proforma_next_number: 1,
+      invoice_accent_color: "#2563eb",
+      invoice_font: "sans",
+      invoice_prefix: "INV-",
+      invoice_next_number: 1,
     },
   });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -88,35 +113,56 @@ export default function ProfileSettings() {
           bank_account_number: data.bank_account_number || "",
           bank_routing_number: data.bank_routing_number || "",
           bank_swift_code: data.bank_swift_code || "",
+          default_currency: data.default_currency || "USD",
+          default_payment_terms: data.default_payment_terms ?? 30,
+          default_tax_rate: data.default_tax_rate ?? 0,
+          proforma_prefix: data.proforma_prefix ?? "PRO-",
+          proforma_next_number: data.proforma_next_number ?? 1,
+          invoice_accent_color: data.invoice_accent_color ?? "#2563eb",
+          invoice_font: data.invoice_font === "serif" || data.invoice_font === "mono" ? data.invoice_font : "sans",
+          invoice_prefix: data.invoice_prefix || "INV-",
+          invoice_next_number: data.invoice_next_number ?? 1,
         });
-        setLogoUrl((data as any).company_logo_url || null);
-        setSignatureUrl((data as any).signature_url || null);
+        const nextLogoPath = getCompanyAssetPath(data.company_logo_url);
+        const nextSignaturePath = getCompanyAssetPath(data.signature_url);
+        setLogoPath(nextLogoPath);
+        setSignaturePath(nextSignaturePath);
+        const [nextLogoUrl, nextSignatureUrl] = await Promise.all([
+          signedUrlFor(data.company_logo_url),
+          signedUrlFor(data.signature_url),
+        ]);
+        setLogoUrl(nextLogoUrl);
+        setSignatureUrl(nextSignatureUrl);
       }
-    } catch (error: any) {
+    } catch {
       toast.error("Error loading profile");
     } finally {
       setLoading(false);
     }
-  };
+  }, [form, navigate]);
+
+  useEffect(() => { void fetchProfile(); }, [fetchProfile]);
 
   const uploadFile = async (file: File, type: "logo" | "signature") => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
+    const validationError = validateCompanyAsset(file);
+    if (validationError) throw new Error(validationError);
+    const fileName = `${user.id}/${type}-${Date.now()}.${getCompanyAssetExtension(file)}`;
 
     const { error: uploadError } = await supabase.storage
       .from("company-assets")
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, file, { upsert: true, contentType: file.type, cacheControl: "3600" });
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("company-assets")
-      .getPublicUrl(fileName);
-
-    return publicUrl;
+    const { data, error: signedUrlError } = await supabase.storage.from("company-assets").createSignedUrl(fileName, 60 * 60);
+    if (signedUrlError) {
+      await supabase.storage.from("company-assets").remove([fileName]);
+      throw signedUrlError;
+    }
+    return { path: fileName, signedUrl: data.signedUrl };
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,19 +171,25 @@ export default function ProfileSettings() {
 
     try {
       setUploadingLogo(true);
-      const url = await uploadFile(file, "logo");
-      setLogoUrl(url);
+      const uploaded = await uploadFile(file, "logo");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
-          .update({ company_logo_url: url } as any)
+          .update({ company_logo_url: uploaded.path })
           .eq("id", user.id);
+        if (error) {
+          await supabase.storage.from("company-assets").remove([uploaded.path]);
+          throw error;
+        }
       }
+      if (logoPath && logoPath !== uploaded.path) await supabase.storage.from("company-assets").remove([logoPath]);
+      setLogoPath(uploaded.path);
+      setLogoUrl(uploaded.signedUrl);
       toast.success("Logo uploaded successfully");
     } catch (error) {
-      toast.error("Error uploading logo");
+      toast.error(error instanceof Error ? error.message : "Error uploading logo");
     } finally {
       setUploadingLogo(false);
     }
@@ -149,19 +201,25 @@ export default function ProfileSettings() {
 
     try {
       setUploadingSignature(true);
-      const url = await uploadFile(file, "signature");
-      setSignatureUrl(url);
+      const uploaded = await uploadFile(file, "signature");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
-          .update({ signature_url: url } as any)
+          .update({ signature_url: uploaded.path })
           .eq("id", user.id);
+        if (error) {
+          await supabase.storage.from("company-assets").remove([uploaded.path]);
+          throw error;
+        }
       }
+      if (signaturePath && signaturePath !== uploaded.path) await supabase.storage.from("company-assets").remove([signaturePath]);
+      setSignaturePath(uploaded.path);
+      setSignatureUrl(uploaded.signedUrl);
       toast.success("Signature uploaded successfully");
     } catch (error) {
-      toast.error("Error uploading signature");
+      toast.error(error instanceof Error ? error.message : "Error uploading signature");
     } finally {
       setUploadingSignature(false);
     }
@@ -171,11 +229,14 @@ export default function ProfileSettings() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
-          .update({ company_logo_url: null } as any)
+          .update({ company_logo_url: null })
           .eq("id", user.id);
+        if (error) throw error;
       }
+      if (logoPath) await supabase.storage.from("company-assets").remove([logoPath]);
+      setLogoPath(null);
       setLogoUrl(null);
       toast.success("Logo removed");
     } catch (error) {
@@ -187,11 +248,14 @@ export default function ProfileSettings() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from("profiles")
-          .update({ signature_url: null } as any)
+          .update({ signature_url: null })
           .eq("id", user.id);
+        if (error) throw error;
       }
+      if (signaturePath) await supabase.storage.from("company-assets").remove([signaturePath]);
+      setSignaturePath(null);
       setSignatureUrl(null);
       toast.success("Signature removed");
     } catch (error) {
@@ -207,13 +271,13 @@ export default function ProfileSettings() {
 
       const { error } = await supabase
         .from("profiles")
-        .update(values)
+        .update({ ...values, invoice_prefix: values.invoice_prefix.toUpperCase() })
         .eq("id", user.id);
 
       if (error) throw error;
 
       toast.success("Profile updated successfully");
-    } catch (error: any) {
+    } catch {
       toast.error("Error updating profile");
     } finally {
       setSaving(false);
@@ -281,7 +345,7 @@ export default function ProfileSettings() {
                     <input
                       ref={logoInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handleLogoUpload}
                       className="hidden"
                     />
@@ -329,7 +393,7 @@ export default function ProfileSettings() {
                     <input
                       ref={signatureInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handleSignatureUpload}
                       className="hidden"
                     />
@@ -473,9 +537,76 @@ export default function ProfileSettings() {
 
             <Card>
               <CardHeader>
+                <CardTitle>Invoice Defaults</CardTitle>
+                <CardDescription>
+                  New invoices use these values. You can still change them on each invoice.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="default_currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Currency</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent className="max-h-64">{currencies.map((currency) => <SelectItem key={currency.code} value={currency.code}>{currency.code} — {currency.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="default_payment_terms"
+                    render={({ field }) => (
+                      <FormItem><FormLabel>Default Payment Terms (days)</FormLabel><FormControl><Input type="number" min="0" max="365" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="default_tax_rate"
+                  render={({ field }) => (
+                    <FormItem><FormLabel>Default Tax Rate (%)</FormLabel><FormControl><Input type="number" min="0" max="100" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="invoice_prefix"
+                    render={({ field }) => (
+                      <FormItem><FormLabel>Invoice Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="invoice_next_number"
+                    render={({ field }) => (
+                      <FormItem><FormLabel>Next Invoice Number</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">Example: {form.watch("invoice_prefix") || "INV-"}{String(form.watch("invoice_next_number") || 1).padStart(4, "0")}</p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField control={form.control} name="proforma_prefix" render={({ field }) => <FormItem><FormLabel>Proforma Prefix</FormLabel><FormControl><Input placeholder="PRO-" {...field} /></FormControl><FormMessage /></FormItem>} />
+                  <FormField control={form.control} name="proforma_next_number" render={({ field }) => <FormItem><FormLabel>Next Proforma Number</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormField control={form.control} name="invoice_accent_color" render={({ field }) => <FormItem><FormLabel>Invoice Accent Color</FormLabel><div className="flex gap-2"><Input type="color" className="w-16 p-1" value={field.value} onChange={field.onChange} /><FormControl><Input {...field} /></FormControl></div><FormMessage /></FormItem>} />
+                  <FormField control={form.control} name="invoice_font" render={({ field }) => <FormItem><FormLabel>Invoice Typography</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="sans">Sans serif</SelectItem><SelectItem value="serif">Serif</SelectItem><SelectItem value="mono">Monospace</SelectItem></SelectContent></Select><FormMessage /></FormItem>} />
+                </div>
+                <Button type="button" variant="outline" onClick={() => navigate("/dashboard/presets")}>Manage reusable service presets</Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Bank Details</CardTitle>
                 <CardDescription>
-                  Payment information displayed on invoices
+                  Optional payment information displayed on invoices. Only store it if clients need it to pay you.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

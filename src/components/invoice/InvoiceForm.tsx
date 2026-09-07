@@ -5,13 +5,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
-import { InvoiceFormData } from "@/pages/CreateInvoice";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { currencies, getCurrencySymbol } from "@/lib/currencies";
+import { calculateLineAmount } from "@/lib/money";
+import {
+  fromDateInputValue,
+  toDateInputValue,
+  type InvoiceFieldErrors,
+} from "@/lib/invoice";
+import type { InvoiceFormData, InvoiceLineItem } from "@/types/domain";
 
 interface InvoiceFormProps {
   formData: InvoiceFormData;
   setFormData: (data: InvoiceFormData) => void;
+  errors?: InvoiceFieldErrors;
+  clearError?: (path: string) => void;
 }
 
 interface Client {
@@ -21,14 +35,40 @@ interface Client {
   client_address: string | null;
 }
 
-const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
+interface Project {
+  id: string;
+  client_id: string;
+  name: string;
+  currency: string;
+}
+
+interface Preset {
+  id: string;
+  name: string;
+  items: unknown;
+  tax_rate: number;
+  notes: string | null;
+  payment_terms: string | null;
+}
+
+const InvoiceForm = ({
+  formData,
+  setFormData,
+  errors = {},
+  clearError,
+}: InvoiceFormProps) => {
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [clientLoadError, setClientLoadError] = useState(false);
 
   useEffect(() => {
-    fetchClients();
+    void fetchClients();
+    void fetchProjectsAndPresets();
   }, []);
 
   const fetchClients = async () => {
+    setClientLoadError(false);
     try {
       const { data, error } = await supabase
         .from("clients")
@@ -37,9 +77,24 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
 
       if (error) throw error;
       setClients(data || []);
-    } catch (error: any) {
-      console.error("Error fetching clients:", error);
+    } catch {
+      setClientLoadError(true);
     }
+  };
+
+  const fetchProjectsAndPresets = async () => {
+    const [projectResult, presetResult] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("id, client_id, name, currency")
+        .order("name"),
+      supabase
+        .from("invoice_presets")
+        .select("id, name, items, tax_rate, notes, payment_terms")
+        .order("name"),
+    ]);
+    if (!projectResult.error) setProjects(projectResult.data ?? []);
+    if (!presetResult.error) setPresets(presetResult.data ?? []);
   };
 
   const handleClientSelect = (clientId: string) => {
@@ -47,6 +102,8 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
     if (client) {
       setFormData({
         ...formData,
+        clientId: client.id,
+        projectId: null,
         clientName: client.client_name,
         clientEmail: client.client_email,
         clientAddress: client.client_address || "",
@@ -54,10 +111,35 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
     }
   };
 
+  const handlePresetSelect = (presetId: string) => {
+    const preset = presets.find(({ id }) => id === presetId);
+    if (!preset || !Array.isArray(preset.items)) return;
+    const items = preset.items.filter(
+      (item): item is InvoiceLineItem =>
+        Boolean(item) &&
+        typeof item === "object" &&
+        "description" in item &&
+        "quantity" in item &&
+        "rate" in item &&
+        "amount" in item,
+    );
+    if (!items.length) return;
+    setFormData({
+      ...formData,
+      items,
+      taxRate: preset.tax_rate,
+      notes: preset.notes ?? "",
+      paymentTerms: preset.payment_terms ?? "",
+    });
+  };
+
   const addItem = () => {
     setFormData({
       ...formData,
-      items: [...formData.items, { description: "", quantity: 1, rate: 0, amount: 0 }],
+      items: [
+        ...formData.items,
+        { description: "", quantity: 1, rate: 0, amount: 0 },
+      ],
     });
   };
 
@@ -66,16 +148,33 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
     setFormData({ ...formData, items: newItems });
   };
 
-  const updateItem = (index: number, field: string, value: any) => {
+  const updateItem = <Key extends keyof InvoiceLineItem>(
+    index: number,
+    field: Key,
+    value: InvoiceLineItem[Key],
+  ) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     if (field === "quantity" || field === "rate") {
-      newItems[index].amount = newItems[index].quantity * newItems[index].rate;
+      newItems[index].amount = calculateLineAmount(
+        newItems[index].quantity,
+        newItems[index].rate,
+      );
     }
-    
+    clearError?.(`items.${index}.${field}`);
     setFormData({ ...formData, items: newItems });
   };
+
+  const fieldError = (path: string) =>
+    errors[path] ? (
+      <p
+        className="text-sm text-destructive"
+        id={`${path.split(".").join("-")}-error`}
+      >
+        {errors[path]}
+      </p>
+    ) : null;
 
   const currencySymbol = getCurrencySymbol(formData.currency);
 
@@ -83,13 +182,37 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
     <div className="space-y-6">
       {/* Template and Currency Row */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Template & Currency</h3>
+        <h3 className="text-lg font-semibold text-foreground">
+          Template & Currency
+        </h3>
+        {presets.length > 0 && (
+          <div className="space-y-2">
+            <Label>Service preset</Label>
+            <Select onValueChange={handlePresetSelect}>
+              <SelectTrigger>
+                <SelectValue placeholder="Apply a reusable preset…" />
+              </SelectTrigger>
+              <SelectContent>
+                {presets.map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    {preset.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Invoice Template</Label>
             <Select
               value={formData.templateId}
-              onValueChange={(value) => setFormData({ ...formData, templateId: value })}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  templateId: value as InvoiceFormData["templateId"],
+                })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -105,7 +228,10 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
             <Label>Currency</Label>
             <Select
               value={formData.currency}
-              onValueChange={(value) => setFormData({ ...formData, currency: value })}
+              onValueChange={(value) => {
+                clearError?.("currency");
+                setFormData({ ...formData, currency: value });
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -118,31 +244,45 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
                 ))}
               </SelectContent>
             </Select>
+            {fieldError("currency")}
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Invoice Details</h3>
+        <h3 className="text-lg font-semibold text-foreground">
+          Invoice Details
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="invoiceNumber">Invoice Number</Label>
             <Input
               id="invoiceNumber"
               value={formData.invoiceNumber}
-              onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+              onChange={(e) => {
+                clearError?.("invoiceNumber");
+                setFormData({ ...formData, invoiceNumber: e.target.value });
+              }}
+              aria-invalid={Boolean(errors.invoiceNumber)}
             />
+            {fieldError("invoiceNumber")}
           </div>
           <div className="space-y-2">
             <Label htmlFor="issueDate">Issue Date</Label>
             <Input
               id="issueDate"
               type="date"
-              value={formData.issueDate.toISOString().split("T")[0]}
-              onChange={(e) =>
-                setFormData({ ...formData, issueDate: new Date(e.target.value) })
-              }
+              value={toDateInputValue(formData.issueDate)}
+              onChange={(e) => {
+                clearError?.("issueDate");
+                setFormData({
+                  ...formData,
+                  issueDate: fromDateInputValue(e.target.value),
+                });
+              }}
+              aria-invalid={Boolean(errors.issueDate)}
             />
+            {fieldError("issueDate")}
           </div>
         </div>
         <div className="space-y-2">
@@ -150,17 +290,48 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
           <Input
             id="dueDate"
             type="date"
-            value={formData.dueDate.toISOString().split("T")[0]}
-            onChange={(e) =>
-              setFormData({ ...formData, dueDate: new Date(e.target.value) })
-            }
+            value={toDateInputValue(formData.dueDate)}
+            onChange={(e) => {
+              clearError?.("dueDate");
+              setFormData({
+                ...formData,
+                dueDate: fromDateInputValue(e.target.value),
+              });
+            }}
+            min={toDateInputValue(formData.issueDate)}
+            aria-invalid={Boolean(errors.dueDate)}
           />
+          {fieldError("dueDate")}
         </div>
+        {formData.documentType === "proforma" && (
+          <div className="space-y-2">
+            <Label htmlFor="expiryDate">Valid until</Label>
+            <Input
+              id="expiryDate"
+              type="date"
+              min={toDateInputValue(formData.issueDate)}
+              value={
+                formData.expiryDate ? toDateInputValue(formData.expiryDate) : ""
+              }
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  expiryDate: event.target.value
+                    ? fromDateInputValue(event.target.value)
+                    : null,
+                })
+              }
+            />
+            {fieldError("expiryDate")}
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Client Information</h3>
-        
+        <h3 className="text-lg font-semibold text-foreground">
+          Client Information
+        </h3>
+
         {clients.length > 0 && (
           <div className="space-y-2">
             <Label htmlFor="selectClient">Select Saved Client (Optional)</Label>
@@ -178,15 +349,70 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
             </Select>
           </div>
         )}
+        {projects.filter(
+          (project) =>
+            !formData.clientId || project.client_id === formData.clientId,
+        ).length > 0 && (
+          <div className="space-y-2">
+            <Label>Project (optional)</Label>
+            <Select
+              value={formData.projectId ?? "none"}
+              onValueChange={(value) => {
+                const project = projects.find(({ id }) => id === value);
+                setFormData({
+                  ...formData,
+                  projectId: value === "none" ? null : value,
+                  currency: project?.currency ?? formData.currency,
+                });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No project</SelectItem>
+                {projects
+                  .filter(
+                    (project) =>
+                      !formData.clientId ||
+                      project.client_id === formData.clientId,
+                  )
+                  .map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {clientLoadError && (
+          <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>Saved clients couldn’t be loaded.</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={fetchClients}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="clientName">Client Name</Label>
           <Input
             id="clientName"
             value={formData.clientName}
-            onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+            onChange={(e) => {
+              clearError?.("clientName");
+              setFormData({ ...formData, clientName: e.target.value });
+            }}
             placeholder="Client or company name"
+            aria-invalid={Boolean(errors.clientName)}
           />
+          {fieldError("clientName")}
         </div>
         <div className="space-y-2">
           <Label htmlFor="clientEmail">Client Email</Label>
@@ -194,16 +420,23 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
             id="clientEmail"
             type="email"
             value={formData.clientEmail}
-            onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+            onChange={(e) => {
+              clearError?.("clientEmail");
+              setFormData({ ...formData, clientEmail: e.target.value });
+            }}
             placeholder="client@example.com"
+            aria-invalid={Boolean(errors.clientEmail)}
           />
+          {fieldError("clientEmail")}
         </div>
         <div className="space-y-2">
           <Label htmlFor="clientAddress">Client Address</Label>
           <Textarea
             id="clientAddress"
             value={formData.clientAddress}
-            onChange={(e) => setFormData({ ...formData, clientAddress: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, clientAddress: e.target.value })
+            }
             placeholder="Street address, city, state, ZIP"
             rows={3}
           />
@@ -213,24 +446,31 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="text-lg font-semibold text-foreground">Line Items</h3>
-          <Button onClick={addItem} size="sm">
+          <Button type="button" onClick={addItem} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Button>
         </div>
-        
+
         <div className="space-y-4">
           {formData.items.map((item, index) => (
-            <div key={index} className="p-4 border border-border rounded-lg space-y-3">
+            <div
+              key={index}
+              className="p-4 border border-border rounded-lg space-y-3"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 space-y-2">
                   <Label htmlFor={`description-${index}`}>Description</Label>
                   <Input
                     id={`description-${index}`}
                     value={item.description}
-                    onChange={(e) => updateItem(index, "description", e.target.value)}
+                    onChange={(e) =>
+                      updateItem(index, "description", e.target.value)
+                    }
                     placeholder="Item description"
+                    aria-invalid={Boolean(errors[`items.${index}.description`])}
                   />
+                  {fieldError(`items.${index}.description`)}
                 </div>
                 {formData.items.length > 1 && (
                   <Button
@@ -243,7 +483,7 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
                   </Button>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor={`quantity-${index}`}>Quantity</Label>
@@ -252,8 +492,12 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
+                    onChange={(e) =>
+                      updateItem(index, "quantity", Number(e.target.value))
+                    }
+                    aria-invalid={Boolean(errors[`items.${index}.quantity`])}
                   />
+                  {fieldError(`items.${index}.quantity`)}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`rate-${index}`}>Rate</Label>
@@ -263,8 +507,12 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
                     min="0"
                     step="0.01"
                     value={item.rate}
-                    onChange={(e) => updateItem(index, "rate", Number(e.target.value))}
+                    onChange={(e) =>
+                      updateItem(index, "rate", Number(e.target.value))
+                    }
+                    aria-invalid={Boolean(errors[`items.${index}.rate`])}
                   />
+                  {fieldError(`items.${index}.rate`)}
                 </div>
                 <div className="space-y-2">
                   <Label>Amount</Label>
@@ -281,7 +529,58 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground">Additional Information</h3>
+        <h3 className="text-lg font-semibold text-foreground">
+          Additional Information
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="discountType">Discount Type</Label>
+            <Select
+              value={formData.discountType}
+              onValueChange={(value) => {
+                clearError?.("discountType");
+                setFormData({
+                  ...formData,
+                  discountType: value as InvoiceFormData["discountType"],
+                });
+              }}
+            >
+              <SelectTrigger id="discountType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fixed amount</SelectItem>
+                <SelectItem value="percentage">Percentage</SelectItem>
+              </SelectContent>
+            </Select>
+            {fieldError("discountType")}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="discountValue">
+              Discount{" "}
+              {formData.discountType === "percentage"
+                ? "(%)"
+                : `(${currencySymbol})`}
+            </Label>
+            <Input
+              id="discountValue"
+              type="number"
+              min="0"
+              max={formData.discountType === "percentage" ? "100" : undefined}
+              step="0.01"
+              value={formData.discountValue}
+              onChange={(e) => {
+                clearError?.("discountValue");
+                setFormData({
+                  ...formData,
+                  discountValue: Number(e.target.value),
+                });
+              }}
+              aria-invalid={Boolean(errors.discountValue)}
+            />
+            {fieldError("discountValue")}
+          </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="taxRate">Tax Rate (%)</Label>
           <Input
@@ -290,17 +589,61 @@ const InvoiceForm = ({ formData, setFormData }: InvoiceFormProps) => {
             min="0"
             step="0.01"
             value={formData.taxRate}
-            onChange={(e) => setFormData({ ...formData, taxRate: Number(e.target.value) })}
+            max="100"
+            onChange={(e) => {
+              clearError?.("taxRate");
+              setFormData({ ...formData, taxRate: Number(e.target.value) });
+            }}
+            aria-invalid={Boolean(errors.taxRate)}
           />
+          {fieldError("taxRate")}
         </div>
         <div className="space-y-2">
           <Label htmlFor="notes">Notes</Label>
           <Textarea
             id="notes"
             value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, notes: e.target.value })
+            }
             placeholder="Any additional notes or terms..."
             rows={4}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="paymentTerms">Payment Terms</Label>
+          <Textarea
+            id="paymentTerms"
+            value={formData.paymentTerms}
+            onChange={(e) =>
+              setFormData({ ...formData, paymentTerms: e.target.value })
+            }
+            placeholder="For example: Payment is due within 30 days."
+            rows={3}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="lateFeeNotes">Late-fee Notes</Label>
+          <Textarea
+            id="lateFeeNotes"
+            value={formData.lateFeeNotes}
+            onChange={(e) =>
+              setFormData({ ...formData, lateFeeNotes: e.target.value })
+            }
+            placeholder="Optional late-payment policy shown on the invoice."
+            rows={3}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="footerText">Footer Text</Label>
+          <Textarea
+            id="footerText"
+            value={formData.footerText}
+            onChange={(e) =>
+              setFormData({ ...formData, footerText: e.target.value })
+            }
+            placeholder="A short thank-you or legal footer."
+            rows={3}
           />
         </div>
       </div>
