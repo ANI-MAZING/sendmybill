@@ -25,6 +25,8 @@ export const invoiceSchema = z
     dueDate: z.date({ required_error: "Due date is required" }).refine((date) => !Number.isNaN(date.getTime()), "Enter a valid due date"),
     expiryDate: z.date().nullable(),
     items: z.array(invoiceLineItemSchema).min(1, "Add at least one line item"),
+    discountType: z.enum(["fixed", "percentage"]),
+    discountValue: z.number().finite().nonnegative("Discount cannot be negative"),
     taxRate: z.number().finite().min(0, "Tax cannot be negative").max(100, "Tax cannot exceed 100%"),
     notes: z.string().max(5_000),
     paymentTerms: z.string().max(5_000),
@@ -34,7 +36,7 @@ export const invoiceSchema = z
     currency: z.string().refine((code) => supportedCurrencies.has(code), "Choose a supported currency"),
     sellerSnapshot: z.unknown().optional(),
   })
-  .superRefine(({ issueDate, dueDate, expiryDate }, context) => {
+  .superRefine(({ issueDate, dueDate, expiryDate, discountType, discountValue }, context) => {
     if (dueDate < issueDate) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -44,6 +46,9 @@ export const invoiceSchema = z
     }
     if (expiryDate && expiryDate < issueDate) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["expiryDate"], message: "Expiry date cannot be earlier than the issue date" });
+    }
+    if (discountType === "percentage" && discountValue > 100) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["discountValue"], message: "Percentage discount cannot exceed 100%" });
     }
   });
 

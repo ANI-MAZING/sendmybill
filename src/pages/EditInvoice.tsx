@@ -27,6 +27,8 @@ const emptyInvoice: InvoiceFormData = {
   dueDate: new Date(),
   expiryDate: null,
   items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
+  discountType: "fixed",
+  discountValue: 0,
   taxRate: 0,
   notes: "",
   paymentTerms: "",
@@ -81,6 +83,8 @@ const EditInvoice = () => {
         rate: item.rate ?? 0,
         amount: item.amount ?? 0,
       })),
+      discountType: data.discount_type as InvoiceFormData["discountType"] ?? "fixed",
+      discountValue: data.discount_value ?? 0,
       taxRate: data.tax_rate,
       notes: data.notes || "",
       paymentTerms: data.payment_terms ?? "",
@@ -95,7 +99,7 @@ const EditInvoice = () => {
 
   useEffect(() => { void fetchInvoice(); }, [fetchInvoice]);
 
-  const totals = calculateInvoiceTotals(formData.items, formData.taxRate);
+  const totals = calculateInvoiceTotals(formData.items, formData.taxRate, formData.discountType, formData.discountValue);
   const clearError = (path: string) => setErrors((current) => {
     const nextErrors = { ...current };
     delete nextErrors[path];
@@ -110,7 +114,7 @@ const EditInvoice = () => {
       return;
     }
     const invoice = normalizeInvoice(formData);
-    const recalculatedTotals = calculateInvoiceTotals(invoice.items, invoice.taxRate);
+    const recalculatedTotals = calculateInvoiceTotals(invoice.items, invoice.taxRate, invoice.discountType, invoice.discountValue);
     setErrors({});
     setSaving(true);
     const { error } = await supabase.from("invoices").update({
@@ -125,6 +129,9 @@ const EditInvoice = () => {
       expiry_date: invoice.expiryDate ? toDateInputValue(invoice.expiryDate) : null,
       items: invoice.items as unknown as Json,
       subtotal: recalculatedTotals.subtotal,
+      discount_type: invoice.discountType,
+      discount_value: invoice.discountValue,
+      discount_amount: recalculatedTotals.discountAmount,
       tax_rate: invoice.taxRate,
       tax_amount: recalculatedTotals.taxAmount,
       total: recalculatedTotals.total,

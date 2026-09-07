@@ -371,6 +371,42 @@ const InvoiceForm = ({ formData, setFormData, errors = {}, clearError }: Invoice
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Additional Information</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="discountType">Discount Type</Label>
+            <Select
+              value={formData.discountType}
+              onValueChange={(value) => {
+                clearError?.("discountType");
+                setFormData({ ...formData, discountType: value as InvoiceFormData["discountType"] });
+              }}
+            >
+              <SelectTrigger id="discountType"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fixed amount</SelectItem>
+                <SelectItem value="percentage">Percentage</SelectItem>
+              </SelectContent>
+            </Select>
+            {fieldError("discountType")}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="discountValue">Discount {formData.discountType === "percentage" ? "(%)" : `(${currencySymbol})`}</Label>
+            <Input
+              id="discountValue"
+              type="number"
+              min="0"
+              max={formData.discountType === "percentage" ? "100" : undefined}
+              step="0.01"
+              value={formData.discountValue}
+              onChange={(e) => {
+                clearError?.("discountValue");
+                setFormData({ ...formData, discountValue: Number(e.target.value) });
+              }}
+              aria-invalid={Boolean(errors.discountValue)}
+            />
+            {fieldError("discountValue")}
+          </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="taxRate">Tax Rate (%)</Label>
           <Input

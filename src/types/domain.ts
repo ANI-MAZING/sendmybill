@@ -37,6 +37,8 @@ export interface InvoiceFormData {
   dueDate: Date;
   expiryDate: Date | null;
   items: InvoiceLineItem[];
+  discountType: "fixed" | "percentage";
+  discountValue: number;
   taxRate: number;
   notes: string;
   paymentTerms: string;
@@ -49,6 +51,7 @@ export interface InvoiceFormData {
 
 export interface InvoiceTotals {
   subtotal: number;
+  discountAmount: number;
   taxAmount: number;
   total: number;
 }

@@ -87,6 +87,12 @@ const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             <span className="text-gray-500">Subtotal</span>
             <span>{formatCurrency(totals.subtotal, currency)}</span>
           </div>
+          {totals.discountAmount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Discount{formData.discountType === "percentage" ? ` (${formData.discountValue}%)` : ""}</span>
+              <span>-{formatCurrency(totals.discountAmount, currency)}</span>
+            </div>
+          )}
           {formData.taxRate > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Tax ({formData.taxRate}%)</span>

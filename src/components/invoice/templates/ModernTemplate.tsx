@@ -94,6 +94,12 @@ const ModernTemplate = ({ formData, totals, profileData }: TemplateProps) => {
             <span className="text-gray-600">Subtotal:</span>
             <span className="font-semibold">{formatCurrency(totals.subtotal, currency)}</span>
           </div>
+          {totals.discountAmount > 0 && (
+            <div className="flex justify-between py-2">
+              <span className="text-gray-600">Discount{formData.discountType === "percentage" ? ` (${formData.discountValue}%)` : ""}:</span>
+              <span className="font-semibold">-{formatCurrency(totals.discountAmount, currency)}</span>
+            </div>
+          )}
           {formData.taxRate > 0 && (
             <div className="flex justify-between py-2">
               <span className="text-gray-600">Tax ({formData.taxRate}%):</span>

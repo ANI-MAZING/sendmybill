@@ -68,6 +68,8 @@ const InvoiceDetail = () => {
         dueDate: new Date(`${data.due_date}T00:00:00`),
         expiryDate: data.expiry_date ? new Date(`${data.expiry_date}T00:00:00`) : null,
         items: itemResult.data,
+        discountType: data.discount_type as InvoiceFormData["discountType"] ?? "fixed",
+        discountValue: data.discount_value ?? 0,
         taxRate: data.tax_rate,
         notes: data.notes ?? "",
         paymentTerms: data.payment_terms ?? "",
@@ -92,7 +94,7 @@ const InvoiceDetail = () => {
 
   const { invoice, formData } = detail;
   const displayStatus = invoice.document_type === "proforma" ? invoice.proforma_status ?? "draft" : getInvoiceDisplayStatus(invoice);
-  const totals = calculateInvoiceTotals(formData.items, formData.taxRate);
+  const totals = calculateInvoiceTotals(formData.items, formData.taxRate, formData.discountType, formData.discountValue);
   const convertProforma = async () => {
     const { data, error } = await supabase.rpc("convert_proforma", { p_proforma_id: invoice.id });
     if (error || !data) return toast.error("Proforma couldn’t be converted.");

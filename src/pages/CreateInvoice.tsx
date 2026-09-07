@@ -28,6 +28,8 @@ const initialFormData: InvoiceFormData = {
   dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30),
   expiryDate: null,
   items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
+  discountType: "fixed",
+  discountValue: 0,
   taxRate: 0,
   notes: "",
   paymentTerms: "",
@@ -104,7 +106,7 @@ const CreateInvoice = () => {
     return () => { mounted = false; };
   }, [searchParams]);
 
-  const totals = calculateInvoiceTotals(formData.items, formData.taxRate);
+  const totals = calculateInvoiceTotals(formData.items, formData.taxRate, formData.discountType, formData.discountValue);
 
   const clearError = (path: string) => setErrors((current) => {
     if (!current[path]) return current;
@@ -122,7 +124,7 @@ const CreateInvoice = () => {
     }
 
     const invoice = normalizeInvoice(formData);
-    const recalculatedTotals = calculateInvoiceTotals(invoice.items, invoice.taxRate);
+    const recalculatedTotals = calculateInvoiceTotals(invoice.items, invoice.taxRate, invoice.discountType, invoice.discountValue);
     setErrors({});
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -148,6 +150,9 @@ const CreateInvoice = () => {
       expiry_date: invoice.expiryDate ? toDateInputValue(invoice.expiryDate) : null,
       items: invoice.items as unknown as Json,
       subtotal: recalculatedTotals.subtotal,
+      discount_type: invoice.discountType,
+      discount_value: invoice.discountValue,
+      discount_amount: recalculatedTotals.discountAmount,
       tax_rate: invoice.taxRate,
       tax_amount: recalculatedTotals.taxAmount,
       total: recalculatedTotals.total,

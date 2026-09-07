@@ -121,6 +121,9 @@ export type Database = {
           client_name: string
           created_at: string
           currency: string
+            discount_amount: number
+            discount_type: string
+            discount_value: number
           due_date: string
           document_type: string
           expiry_date: string | null
@@ -154,6 +157,9 @@ export type Database = {
           client_name: string
           created_at?: string
           currency?: string
+            discount_amount?: number
+            discount_type?: string
+            discount_value?: number
           due_date: string
           document_type?: string
           expiry_date?: string | null
@@ -187,6 +193,9 @@ export type Database = {
           client_name?: string
           created_at?: string
           currency?: string
+            discount_amount?: number
+            discount_type?: string
+            discount_value?: number
           due_date?: string
           document_type?: string
           expiry_date?: string | null

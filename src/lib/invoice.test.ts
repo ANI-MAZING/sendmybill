@@ -22,6 +22,8 @@ const validInvoice = (): InvoiceFormData => ({
   items: [{ description: "Design work", quantity: 2, rate: 250, amount: 1 }],
   taxRate: 18,
   notes: "Thank you",
+    discountType: "fixed",
+    discountValue: 0,
   paymentTerms: "Due within 30 days",
   lateFeeNotes: "Late balances may incur a fee",
   footerText: "Thank you for your business",
