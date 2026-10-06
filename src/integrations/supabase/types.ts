@@ -244,6 +244,11 @@ export type Database = {
           updated_at: string;
           user_id: string;
           footer_text: string | null;
+          share_token: string | null;
+          shared_at: string | null;
+          first_viewed_at: string | null;
+          last_viewed_at: string | null;
+          view_count: number;
         };
         Insert: {
           archived_at?: string | null;
@@ -280,6 +285,11 @@ export type Database = {
           updated_at?: string;
           user_id: string;
           footer_text?: string | null;
+          share_token?: string | null;
+          shared_at?: string | null;
+          first_viewed_at?: string | null;
+          last_viewed_at?: string | null;
+          view_count?: number;
         };
         Update: {
           archived_at?: string | null;
@@ -316,6 +326,11 @@ export type Database = {
           updated_at?: string;
           user_id?: string;
           footer_text?: string | null;
+          share_token?: string | null;
+          shared_at?: string | null;
+          first_viewed_at?: string | null;
+          last_viewed_at?: string | null;
+          view_count?: number;
         };
         Relationships: [
           {
@@ -517,6 +532,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      disable_invoice_share: {
+        Args: { p_invoice_id: string };
+        Returns: undefined;
+      };
+      enable_invoice_share: {
+        Args: { p_invoice_id: string; p_regenerate?: boolean };
+        Returns: string;
+      };
+      get_shared_invoice: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
       convert_proforma: {
         Args: { p_proforma_id: string };
         Returns: string;

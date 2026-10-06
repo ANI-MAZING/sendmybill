@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { PageLoader } from "@/components/shared/AsyncState";
 
+const SharedInvoice = lazy(() => import("./pages/SharedInvoice"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -41,6 +42,7 @@ const App = () => (
           <Suspense fallback={<PageLoader label="Loading Sendmybill…" />}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/i/:token" element={<SharedInvoice />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/update-password" element={<UpdatePassword />} />
