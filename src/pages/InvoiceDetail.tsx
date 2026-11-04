@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ArrowLeft, Pencil, RefreshCw } from "lucide-react";
-import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -13,10 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currencies";
-import { getInvoiceDisplayStatus, invoiceLineItemSchema } from "@/lib/invoice";
+import { getInvoiceDisplayStatus } from "@/lib/invoice";
+import { toInvoiceFormData } from "@/lib/invoice-record";
 import { calculateInvoiceTotals } from "@/lib/money";
-import { toSellerSnapshot } from "@/lib/profile";
-import type { InvoiceFormData, SellerSnapshot } from "@/types/domain";
+import type { InvoiceFormData } from "@/types/domain";
+import ShareInvoicePanel from "@/components/invoice/ShareInvoicePanel";
 
 type InvoiceRecord = Tables<"invoices">;
 
@@ -47,8 +47,8 @@ const InvoiceDetail = () => {
       return;
     }
 
-    const itemResult = z.array(invoiceLineItemSchema).safeParse(data.items);
-    if (!itemResult.success) {
+    const formData = toInvoiceFormData(data);
+    if (!formData) {
       toast.error(
         "This invoice contains invalid line items and cannot be displayed safely.",
       );
@@ -56,44 +56,7 @@ const InvoiceDetail = () => {
       return;
     }
 
-    const rawSnapshot =
-      data.seller_snapshot &&
-      typeof data.seller_snapshot === "object" &&
-      !Array.isArray(data.seller_snapshot)
-        ? (data.seller_snapshot as Partial<
-            Record<keyof SellerSnapshot, string | null>
-          >)
-        : {};
-
-    setDetail({
-      invoice: data,
-      formData: {
-        clientId: data.client_id,
-        projectId: data.project_id,
-        documentType: data.document_type as InvoiceFormData["documentType"],
-        invoiceNumber: data.invoice_number,
-        clientName: data.client_name,
-        clientEmail: data.client_email,
-        clientAddress: data.client_address ?? "",
-        issueDate: new Date(`${data.issue_date}T00:00:00`),
-        dueDate: new Date(`${data.due_date}T00:00:00`),
-        expiryDate: data.expiry_date
-          ? new Date(`${data.expiry_date}T00:00:00`)
-          : null,
-        items: itemResult.data,
-        discountType:
-          (data.discount_type as InvoiceFormData["discountType"]) ?? "fixed",
-        discountValue: data.discount_value ?? 0,
-        taxRate: data.tax_rate,
-        notes: data.notes ?? "",
-        paymentTerms: data.payment_terms ?? "",
-        lateFeeNotes: data.late_fee_notes ?? "",
-        footerText: data.footer_text ?? "",
-        templateId: data.template_id as InvoiceFormData["templateId"],
-        currency: data.currency,
-        sellerSnapshot: toSellerSnapshot(rawSnapshot),
-      },
-    });
+    setDetail({ invoice: data, formData });
     if (data.document_type === "invoice") {
       const { data: paymentAllocations } = await supabase
         .from("payment_allocations")
@@ -224,6 +187,16 @@ const InvoiceDetail = () => {
             }
           />
         </div>
+
+        {invoice.document_type === "invoice" && (
+          <ShareInvoicePanel
+            invoiceId={invoice.id}
+            token={invoice.share_token}
+            viewCount={invoice.view_count}
+            lastViewedAt={invoice.last_viewed_at}
+            onChange={() => void fetchInvoice()}
+          />
+        )}
 
         <div className="mx-auto max-w-5xl">
           <InvoicePreview formData={formData} totals={totals} />

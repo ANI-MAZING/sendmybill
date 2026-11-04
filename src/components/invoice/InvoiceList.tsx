@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Archive, ArchiveRestore, Copy, Download, Eye, FileText, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Download, Link2, Eye, FileText, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -11,6 +11,7 @@ import { createInvoicesCsv } from "@/lib/csv";
 import { ErrorState, PageLoader } from "@/components/shared/AsyncState";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { copyInvoiceLink } from "@/components/invoice/ShareInvoicePanel";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -370,6 +371,11 @@ const InvoiceList = () => {
                       <DropdownMenuItem onSelect={() => navigate(`/dashboard/invoices/${invoice.id}`)}>
                         <Eye className="mr-2 h-4 w-4" />View details
                       </DropdownMenuItem>
+                      {invoice.document_type === "invoice" && !invoice.archived_at && (
+                        <DropdownMenuItem onSelect={() => void copyInvoiceLink(invoice.id)}>
+                          <Link2 className="mr-2 h-4 w-4" />Copy share link
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onSelect={() => navigate(`/dashboard/edit/${invoice.id}`)}>
                         <Pencil className="mr-2 h-4 w-4" />Edit
                       </DropdownMenuItem>
