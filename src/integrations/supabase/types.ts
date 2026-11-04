@@ -50,6 +50,8 @@ type ProjectTaskRow = {
   title: string;
   description: string | null;
   due_date: string | null;
+  scheduled_at: string | null;
+  estimated_minutes: number;
   status: string;
   is_deliverable: boolean;
   created_at: string;
@@ -175,36 +177,51 @@ export type Database = {
           client_email: string;
           client_name: string;
           created_at: string;
+          first_viewed_at: string | null;
           id: string;
+          last_viewed_at: string | null;
           notes: string | null;
           phone: string | null;
+          share_token: string | null;
+          shared_at: string | null;
           tags: string[];
           updated_at: string;
           user_id: string;
+          view_count: number;
         };
         Insert: {
           client_address?: string | null;
           client_email: string;
           client_name: string;
           created_at?: string;
+          first_viewed_at?: string | null;
           id?: string;
+          last_viewed_at?: string | null;
           notes?: string | null;
           phone?: string | null;
+          share_token?: string | null;
+          shared_at?: string | null;
           tags?: string[];
           updated_at?: string;
           user_id: string;
+          view_count?: number;
         };
         Update: {
           client_address?: string | null;
           client_email?: string;
           client_name?: string;
           created_at?: string;
+          first_viewed_at?: string | null;
           id?: string;
+          last_viewed_at?: string | null;
           notes?: string | null;
           phone?: string | null;
+          share_token?: string | null;
+          shared_at?: string | null;
           tags?: string[];
           updated_at?: string;
           user_id?: string;
+          view_count?: number;
         };
         Relationships: [];
       };
@@ -532,6 +549,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      disable_client_share: {
+        Args: { p_client_id: string };
+        Returns: undefined;
+      };
+      enable_client_share: {
+        Args: { p_client_id: string; p_regenerate?: boolean };
+        Returns: string;
+      };
+      get_shared_client: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
       disable_invoice_share: {
         Args: { p_invoice_id: string };
         Returns: undefined;

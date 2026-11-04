@@ -2,13 +2,14 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { PageLoader } from "@/components/shared/AsyncState";
 
 const SharedInvoice = lazy(() => import("./pages/SharedInvoice"));
+const ClientPortal = lazy(() => import("./pages/ClientPortal"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -20,6 +21,8 @@ const CreateInvoice = lazy(() => import("./pages/CreateInvoice"));
 const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
 const EditInvoice = lazy(() => import("./pages/EditInvoice"));
 const ClientsManagement = lazy(() => import("./pages/ClientsManagement"));
+const ClientDetail = lazy(() => import("./pages/ClientDetail"));
+const Schedule = lazy(() => import("./pages/Schedule"));
 const ProjectsManagement = lazy(() => import("./pages/ProjectsManagement"));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
 const Ledger = lazy(() => import("./pages/Ledger"));
@@ -43,6 +46,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/i/:token" element={<SharedInvoice />} />
+              <Route path="/c/:token" element={<ClientPortal />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/update-password" element={<UpdatePassword />} />
@@ -53,9 +57,12 @@ const App = () => (
               <Route path="/dashboard/invoices/:id" element={protect(<InvoiceDetail />)} />
               <Route path="/dashboard/edit/:id" element={protect(<EditInvoice />)} />
               <Route path="/dashboard/clients" element={protect(<ClientsManagement />)} />
+              <Route path="/dashboard/clients/:id" element={protect(<ClientDetail />)} />
+              <Route path="/dashboard/schedule" element={protect(<Schedule />)} />
               <Route path="/dashboard/projects" element={protect(<ProjectsManagement />)} />
               <Route path="/dashboard/projects/:id" element={protect(<ProjectDetail />)} />
-              <Route path="/dashboard/ledger" element={protect(<Ledger />)} />
+              <Route path="/dashboard/money" element={protect(<Ledger />)} />
+              <Route path="/dashboard/ledger" element={<Navigate to="/dashboard/money" replace />} />
               <Route path="/dashboard/presets" element={protect(<InvoicePresets />)} />
               <Route path="/dashboard/settings" element={protect(<ProfileSettings />)} />
               <Route path="/unauthorized" element={protect(<Unauthorized />, false)} />

@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { FileText, LayoutDashboard, LogOut, Plus, ReceiptText, Users, Settings } from "lucide-react";
+import { CalendarClock, FileText, LayoutDashboard, LogOut, Users, Settings, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -11,9 +11,10 @@ interface DashboardLayoutProps {
 }
 
 const NAV_ITEMS = [
-  { label: "Home", path: "/dashboard", icon: LayoutDashboard, exact: true },
-  { label: "Invoices", path: "/dashboard/invoices", icon: ReceiptText, exact: false },
-  { label: "Customers", path: "/dashboard/clients", icon: Users, exact: false },
+  { label: "Today", path: "/dashboard", icon: LayoutDashboard, exact: true },
+  { label: "Clients", path: "/dashboard/clients", icon: Users, exact: false },
+  { label: "Schedule", path: "/dashboard/schedule", icon: CalendarClock, exact: false },
+  { label: "Money", path: "/dashboard/money", icon: WalletCards, exact: false },
   { label: "Settings", path: "/dashboard/settings", icon: Settings, exact: false },
 ];
 
@@ -42,7 +43,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           {NAV_ITEMS.map(({ label, path, icon: Icon, exact }) => (
             <Button key={path} aria-label={label} variant={isActive(path, exact) ? "default" : "ghost"} size="icon" onClick={() => navigate(path)}><Icon className="h-4 w-4" /></Button>
           ))}
-          <Button aria-label="New invoice" size="icon" variant={location.pathname === "/dashboard/create" ? "default" : "outline"} onClick={() => navigate("/dashboard/create")}><Plus className="h-4 w-4" /></Button>
           <ThemeToggle />
         </div>
       </header>
@@ -54,11 +54,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
           <ThemeToggle />
         </div>
-
-        <Button className="mb-6 w-full" onClick={() => navigate("/dashboard/create")}>
-          <Plus className="h-5 w-5 mr-2" />
-          New invoice
-        </Button>
 
         <nav className="space-y-2">
           {NAV_ITEMS.map(({ label, path, icon: Icon, exact }) => (

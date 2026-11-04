@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Download, FileUp, History, Pencil, Plus, ReceiptText, Search, Trash2, Users } from "lucide-react";
+import { Download, FileUp, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -48,7 +48,6 @@ const ClientsManagement = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [detailClient, setDetailClient] = useState<Client | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -224,7 +223,7 @@ const ClientsManagement = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div><h1 className="text-3xl font-bold">Clients</h1><p className="mt-1 text-muted-foreground">Search clients, review balances, and start their next invoice.</p></div>
+          <div><h1 className="text-3xl font-bold">Clients</h1><p className="mt-1 text-muted-foreground">Open a client to see their projects, schedule, invoices, and private link.</p></div>
           <div className="flex flex-wrap gap-2">
             <input ref={importRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importClients(file); event.target.value = ""; }} />
             <Button variant="outline" onClick={() => importRef.current?.click()}><FileUp className="mr-2 h-4 w-4" />Import</Button>
@@ -258,19 +257,16 @@ const ClientsManagement = () => {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{filteredClients.map((client) => {
             const metrics = clientMetrics(client);
             const currency = metrics.history[0]?.currency ?? "USD";
-            return <Card key={client.id}>
-              <CardHeader><div className="flex items-start justify-between gap-3"><div><CardTitle>{client.client_name}</CardTitle><p className="text-sm text-muted-foreground">{client.client_email}</p></div><div className="flex gap-1"><Button size="sm" variant="outline" onClick={() => handleEdit(client)}><Pencil className="mr-2 h-4 w-4" />Edit</Button><Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(client)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></div></div></CardHeader>
+            return <Card key={client.id} className="cursor-pointer hover:bg-muted/30" onClick={() => navigate(`/dashboard/clients/${client.id}`)}>
+              <CardHeader><div className="flex items-start justify-between gap-3"><div><CardTitle>{client.client_name}</CardTitle><p className="text-sm text-muted-foreground">{client.client_email}</p></div><div className="flex gap-1"><Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); handleEdit(client); }}><Pencil className="mr-2 h-4 w-4" />Edit</Button><Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={(event) => { event.stopPropagation(); setDeleteTarget(client); }}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></div></div></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-1">{client.tags.map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}</div>
                 <div className="grid grid-cols-2 gap-3 text-sm"><div><p className="text-muted-foreground">Outstanding</p><p className="font-semibold">{formatCurrency(metrics.outstanding, currency)}</p></div><div><p className="text-muted-foreground">Invoices</p><p className="font-semibold">{metrics.history.length}</p></div><div><p className="text-muted-foreground">Last invoice</p><p>{metrics.lastInvoiceDate ?? "—"}</p></div><div><p className="text-muted-foreground">Last payment</p><p>{metrics.lastPaymentDate ?? "—"}</p></div></div>
                 {client.notes && <p className="line-clamp-2 text-sm text-muted-foreground">{client.notes}</p>}
-                <div className="flex flex-wrap gap-2"><Button size="sm" onClick={() => navigate(`/dashboard/create?client=${client.id}`)}><ReceiptText className="mr-2 h-4 w-4" />Create invoice</Button><Button size="sm" variant="outline" onClick={() => navigate(`/dashboard/projects?client=${client.id}`)}>New project</Button><Button size="sm" variant="outline" onClick={() => setDetailClient(client)}><History className="mr-2 h-4 w-4" />History</Button></div>
               </CardContent>
             </Card>;
           })}</div>
         )}
-
-        <Dialog open={Boolean(detailClient)} onOpenChange={(value) => !value && setDetailClient(null)}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{detailClient?.client_name} invoice history</DialogTitle></DialogHeader><div className="max-h-[60vh] space-y-2 overflow-y-auto">{detailClient && clientMetrics(detailClient).history.length ? clientMetrics(detailClient).history.map((invoice) => <button key={invoice.id} className="flex w-full items-center justify-between rounded border p-3 text-left hover:bg-muted" onClick={() => navigate(`/dashboard/invoices/${invoice.id}`)}><span><span className="font-medium">{invoice.invoice_number}</span><span className="block text-sm text-muted-foreground">Issued {invoice.issue_date} · Due {invoice.due_date}</span></span><span>{formatCurrency(Math.max(invoice.total - (allocationsByInvoice[invoice.id] ?? 0), 0), invoice.currency)} due</span></button>) : <p className="py-8 text-center text-muted-foreground">No invoices yet.</p>}</div></DialogContent></Dialog>
 
         <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(value) => !value && !deleting && setDeleteTarget(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete {deleteTarget?.client_name}?</AlertDialogTitle><AlertDialogDescription>Existing invoice snapshots remain, but clients with projects cannot be deleted.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Keep client</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={(event) => { event.preventDefault(); void handleDelete(); }}>{deleting ? "Deleting…" : "Delete client"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </div>

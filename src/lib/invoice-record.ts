@@ -66,3 +66,5 @@ export const toInvoiceFormData = (record: RenderableInvoice): InvoiceFormData | 
 };
 
 export const buildShareUrl = (token: string): string => `${window.location.origin}/i/${token}`;
+
+export const buildClientPortalUrl = (token: string): string => `${window.location.origin}/c/${token}`;
