@@ -87,9 +87,9 @@ const MinimalTemplate = ({ formData, totals, profileData }: TemplateProps) => {
       <div>
         <p className="text-xs text-gray-400 mb-2">BILLED TO</p>
         <p className="font-medium">{formData.clientName || "Client Name"}</p>
-        <p className="text-sm text-gray-600">
-          {formData.clientEmail || "client@example.com"}
-        </p>
+        {formData.clientEmail.trim() && (
+          <p className="text-sm text-gray-600">{formData.clientEmail.trim()}</p>
+        )}
         {formData.clientAddress && (
           <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">
             {formData.clientAddress}

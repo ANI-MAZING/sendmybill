@@ -104,9 +104,9 @@ const ClassicTemplate = ({ formData, totals, profileData }: TemplateProps) => {
           <p className="font-semibold">
             {formData.clientName || "Client Name"}
           </p>
-          <p className="text-sm text-gray-600">
-            {formData.clientEmail || "client@example.com"}
-          </p>
+          {formData.clientEmail.trim() && (
+            <p className="text-sm text-gray-600">{formData.clientEmail.trim()}</p>
+          )}
           {formData.clientAddress && (
             <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">
               {formData.clientAddress}
